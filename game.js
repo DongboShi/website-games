@@ -10,7 +10,10 @@ const CONFIG = {
     COLS: 10,
     TILE_TYPES: ['🎨', '🎭', '🎪', '🎯', '🎲', '🎸', '🎹', '🎺', '🎻', '🎼', '🏀', '⚽', '🏈', '⚾', '🎾'],
     MATCH_DELAY: 500,
-    HINT_DURATION: 2000
+    HINT_DURATION: 2000,
+    TILE_SIZE: 60,  // Must match .tile width/height in styles.css
+    TILE_GAP: 8,    // Must match .game-board gap in styles.css
+    BOARD_PADDING: 20  // Must match .game-board padding in styles.css
 };
 
 // Game state
@@ -128,8 +131,8 @@ function countPairs(board) {
  */
 function renderBoard() {
     // Set grid template
-    gameBoard.style.gridTemplateColumns = `repeat(${CONFIG.COLS}, 60px)`;
-    gameBoard.style.gridTemplateRows = `repeat(${CONFIG.ROWS}, 60px)`;
+    gameBoard.style.gridTemplateColumns = `repeat(${CONFIG.COLS}, ${CONFIG.TILE_SIZE}px)`;
+    gameBoard.style.gridTemplateRows = `repeat(${CONFIG.ROWS}, ${CONFIG.TILE_SIZE}px)`;
     
     // Clear existing tiles
     gameBoard.innerHTML = '';
@@ -355,9 +358,12 @@ function findOneCornerPath(tile1, tile2) {
 
 /**
  * Find path with two corners (2 turns)
+ * This function explores positions beyond the board boundaries (-1 to ROWS+1, -1 to COLS+1)
+ * to allow paths that extend outside the visible board, which is a valid strategy in 连连看
  */
 function findTwoCornerPath(tile1, tile2) {
     // Check paths through all possible intermediate positions
+    // Range includes positions outside the board to allow external routing
     for (let row = -1; row <= CONFIG.ROWS; row++) {
         for (let col = -1; col <= CONFIG.COLS; col++) {
             // Skip positions on the actual board (except endpoints)
@@ -501,12 +507,12 @@ function drawPath(path) {
  * Get the center position of a tile
  */
 function getTileCenter(row, col) {
-    const tileSize = 60 + 8; // tile width + gap
-    const padding = 20; // board padding
+    const tileSize = CONFIG.TILE_SIZE + CONFIG.TILE_GAP; // tile width + gap
+    const padding = CONFIG.BOARD_PADDING;
     
     return {
-        x: padding + col * tileSize + 30,
-        y: padding + row * tileSize + 30
+        x: padding + col * tileSize + CONFIG.TILE_SIZE / 2,
+        y: padding + row * tileSize + CONFIG.TILE_SIZE / 2
     };
 }
 
@@ -623,6 +629,7 @@ function endGame(won) {
  * Show game message
  */
 function showMessage(text) {
+    // Use innerHTML only for trusted game-generated content (emojis and formatting)
     gameMessage.innerHTML = text;
     gameMessage.classList.remove('hidden');
 }
