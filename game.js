@@ -9,18 +9,28 @@ let currentUser = null;
 
 // User management functions
 function saveUser(username, password) {
-    const users = getUsers();
-    if (users[username]) {
-        return false; // User already exists
+    try {
+        const users = getUsers();
+        if (users[username]) {
+            return false; // User already exists
+        }
+        users[username] = { password: password };
+        localStorage.setItem('lianliankan_users', JSON.stringify(users));
+        return true;
+    } catch (e) {
+        console.error('Failed to save user to localStorage:', e);
+        return false;
     }
-    users[username] = { password: password };
-    localStorage.setItem('lianliankan_users', JSON.stringify(users));
-    return true;
 }
 
 function getUsers() {
-    const usersData = localStorage.getItem('lianliankan_users');
-    return usersData ? JSON.parse(usersData) : {};
+    try {
+        const usersData = localStorage.getItem('lianliankan_users');
+        return usersData ? JSON.parse(usersData) : {};
+    } catch (e) {
+        console.error('Failed to retrieve users from localStorage:', e);
+        return {};
+    }
 }
 
 function authenticateUser(username, password) {
@@ -32,17 +42,30 @@ function authenticateUser(username, password) {
 }
 
 function setCurrentUser(username) {
-    currentUser = username;
-    localStorage.setItem('lianliankan_current_user', username);
+    try {
+        currentUser = username;
+        localStorage.setItem('lianliankan_current_user', username);
+    } catch (e) {
+        console.error('Failed to save current user to localStorage:', e);
+    }
 }
 
 function getCurrentUser() {
-    return localStorage.getItem('lianliankan_current_user');
+    try {
+        return localStorage.getItem('lianliankan_current_user');
+    } catch (e) {
+        console.error('Failed to retrieve current user from localStorage:', e);
+        return null;
+    }
 }
 
 function logout() {
-    currentUser = null;
-    localStorage.removeItem('lianliankan_current_user');
+    try {
+        currentUser = null;
+        localStorage.removeItem('lianliankan_current_user');
+    } catch (e) {
+        console.error('Failed to remove current user from localStorage:', e);
+    }
     showAuthModal();
     hideGameContainer();
 }
@@ -90,18 +113,7 @@ function switchToLoginForm() {
 
 // Initialize authentication
 function initAuth() {
-    // Check if user is already logged in
-    const savedUser = getCurrentUser();
-    if (savedUser) {
-        currentUser = savedUser;
-        startGame();
-        return;
-    }
-
-    // Show authentication modal
-    showAuthModal();
-
-    // Set up event listeners for auth
+    // Set up event listeners for auth (always needed)
     document.getElementById('show-register').addEventListener('click', (e) => {
         e.preventDefault();
         switchToRegisterForm();
@@ -117,15 +129,32 @@ function initAuth() {
     document.getElementById('logout-btn').addEventListener('click', logout);
 
     // Allow Enter key to submit forms
+    document.getElementById('register-username').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') handleRegister();
+    });
     document.getElementById('register-password').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') handleRegister();
     });
     document.getElementById('register-confirm-password').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') handleRegister();
     });
+    document.getElementById('login-username').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') handleLogin();
+    });
     document.getElementById('login-password').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') handleLogin();
     });
+
+    // Check if user is already logged in
+    const savedUser = getCurrentUser();
+    if (savedUser) {
+        currentUser = savedUser;
+        startGame();
+        return;
+    }
+
+    // Show authentication modal
+    showAuthModal();
 }
 
 function handleRegister() {
@@ -153,7 +182,8 @@ function handleRegister() {
         return;
     }
 
-    if (saveUser(username, password)) {
+    const saved = saveUser(username, password);
+    if (saved) {
         showAuthMessage('Registration successful! Logging you in...', true);
         setTimeout(() => {
             currentUser = username;
@@ -161,7 +191,14 @@ function handleRegister() {
             startGame();
         }, 1000);
     } else {
-        showAuthMessage('Username already exists', false);
+        // Check if localStorage is available
+        try {
+            localStorage.setItem('test', 'test');
+            localStorage.removeItem('test');
+            showAuthMessage('Username already exists', false);
+        } catch (e) {
+            showAuthMessage('Unable to save user data. Please enable localStorage in your browser.', false);
+        }
     }
 }
 
