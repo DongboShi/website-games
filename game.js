@@ -4,6 +4,194 @@
  * Rules: Tiles can be connected if the path has at most 2 turns and no obstacles
  */
 
+// ===== User Authentication System =====
+let currentUser = null;
+
+// User management functions
+function saveUser(username, password) {
+    const users = getUsers();
+    if (users[username]) {
+        return false; // User already exists
+    }
+    users[username] = { password: password };
+    localStorage.setItem('lianliankan_users', JSON.stringify(users));
+    return true;
+}
+
+function getUsers() {
+    const usersData = localStorage.getItem('lianliankan_users');
+    return usersData ? JSON.parse(usersData) : {};
+}
+
+function authenticateUser(username, password) {
+    const users = getUsers();
+    if (users[username] && users[username].password === password) {
+        return true;
+    }
+    return false;
+}
+
+function setCurrentUser(username) {
+    currentUser = username;
+    localStorage.setItem('lianliankan_current_user', username);
+}
+
+function getCurrentUser() {
+    return localStorage.getItem('lianliankan_current_user');
+}
+
+function logout() {
+    currentUser = null;
+    localStorage.removeItem('lianliankan_current_user');
+    showAuthModal();
+    hideGameContainer();
+}
+
+// UI functions for authentication
+function showAuthModal() {
+    const modal = document.getElementById('auth-modal');
+    modal.classList.remove('hidden');
+}
+
+function hideAuthModal() {
+    const modal = document.getElementById('auth-modal');
+    modal.classList.add('hidden');
+}
+
+function showGameContainer() {
+    const gameContainer = document.querySelector('.game-container');
+    gameContainer.style.display = 'block';
+}
+
+function hideGameContainer() {
+    const gameContainer = document.querySelector('.game-container');
+    gameContainer.style.display = 'none';
+}
+
+function showAuthMessage(message, isSuccess) {
+    const authMessage = document.getElementById('auth-message');
+    authMessage.textContent = message;
+    authMessage.classList.remove('hidden', 'success', 'error');
+    authMessage.classList.add(isSuccess ? 'success' : 'error');
+    setTimeout(() => {
+        authMessage.classList.add('hidden');
+    }, 3000);
+}
+
+function switchToRegisterForm() {
+    document.getElementById('login-form').classList.add('hidden');
+    document.getElementById('register-form').classList.remove('hidden');
+}
+
+function switchToLoginForm() {
+    document.getElementById('register-form').classList.add('hidden');
+    document.getElementById('login-form').classList.remove('hidden');
+}
+
+// Initialize authentication
+function initAuth() {
+    // Check if user is already logged in
+    const savedUser = getCurrentUser();
+    if (savedUser) {
+        currentUser = savedUser;
+        startGame();
+        return;
+    }
+
+    // Show authentication modal
+    showAuthModal();
+
+    // Set up event listeners for auth
+    document.getElementById('show-register').addEventListener('click', (e) => {
+        e.preventDefault();
+        switchToRegisterForm();
+    });
+
+    document.getElementById('show-login').addEventListener('click', (e) => {
+        e.preventDefault();
+        switchToLoginForm();
+    });
+
+    document.getElementById('register-btn').addEventListener('click', handleRegister);
+    document.getElementById('login-btn').addEventListener('click', handleLogin);
+    document.getElementById('logout-btn').addEventListener('click', logout);
+
+    // Allow Enter key to submit forms
+    document.getElementById('register-password').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') handleRegister();
+    });
+    document.getElementById('register-confirm-password').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') handleRegister();
+    });
+    document.getElementById('login-password').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') handleLogin();
+    });
+}
+
+function handleRegister() {
+    const username = document.getElementById('register-username').value.trim();
+    const password = document.getElementById('register-password').value;
+    const confirmPassword = document.getElementById('register-confirm-password').value;
+
+    if (!username || !password || !confirmPassword) {
+        showAuthMessage('Please fill in all fields', false);
+        return;
+    }
+
+    if (username.length < 3) {
+        showAuthMessage('Username must be at least 3 characters', false);
+        return;
+    }
+
+    if (password.length < 4) {
+        showAuthMessage('Password must be at least 4 characters', false);
+        return;
+    }
+
+    if (password !== confirmPassword) {
+        showAuthMessage('Passwords do not match', false);
+        return;
+    }
+
+    if (saveUser(username, password)) {
+        showAuthMessage('Registration successful! Logging you in...', true);
+        setTimeout(() => {
+            currentUser = username;
+            setCurrentUser(username);
+            startGame();
+        }, 1000);
+    } else {
+        showAuthMessage('Username already exists', false);
+    }
+}
+
+function handleLogin() {
+    const username = document.getElementById('login-username').value.trim();
+    const password = document.getElementById('login-password').value;
+
+    if (!username || !password) {
+        showAuthMessage('Please fill in all fields', false);
+        return;
+    }
+
+    if (authenticateUser(username, password)) {
+        currentUser = username;
+        setCurrentUser(username);
+        startGame();
+    } else {
+        showAuthMessage('Invalid username or password', false);
+    }
+}
+
+function startGame() {
+    hideAuthModal();
+    showGameContainer();
+    document.getElementById('current-user').textContent = currentUser;
+    initGame();
+}
+
+// ===== End User Authentication System =====
+
 // Game configuration
 const CONFIG = {
     ROWS: 8,
@@ -648,5 +836,5 @@ hintBtn.addEventListener('click', showHint);
 // Handle window resize
 window.addEventListener('resize', resizeCanvas);
 
-// Initialize game on load
-initGame();
+// Initialize authentication on load
+initAuth();
