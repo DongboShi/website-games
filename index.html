@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connect the Dots (连连看)</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Game container -->
+    <div class="game-container">
+        <!-- Header section with title and controls -->
+        <div class="header">
+            <h1>Connect the Dots (连连看)</h1>
+            <div class="controls">
+                <div class="info-panel">
+                    <div class="score-display">
+                        <span class="label">Score:</span>
+                        <span id="score">0</span>
+                    </div>
+                    <div class="time-display">
+                        <span class="label">Time:</span>
+                        <span id="timer">00:00</span>
+                    </div>
+                    <div class="pairs-display">
+                        <span class="label">Pairs:</span>
+                        <span id="pairs-remaining">0</span>
+                    </div>
+                </div>
+                <button id="new-game-btn" class="btn-primary">New Game</button>
+                <button id="hint-btn" class="btn-secondary">Hint</button>
+            </div>
+        </div>
+
+        <!-- Game board where tiles are rendered -->
+        <div id="game-board" class="game-board"></div>
+
+        <!-- Connection line canvas overlay -->
+        <canvas id="line-canvas" class="line-canvas"></canvas>
+
+        <!-- Game status messages -->
+        <div id="game-message" class="game-message hidden"></div>
+    </div>
+
+    <!-- Game script -->
+    <script src="game.js"></script>
+</body>
+</html>
