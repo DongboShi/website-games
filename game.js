@@ -233,6 +233,8 @@ function startGame() {
 // ===== Custom Image Management =====
 let customImagePairs = [];
 let gameMode = 'emoji'; // 'emoji' or 'custom'
+let tempGameMode = 'emoji'; // Temporary mode during modal editing
+const MAX_IMAGE_SIZE = 500 * 1024; // 500KB max per image
 
 function loadCustomImages() {
     try {
@@ -241,10 +243,14 @@ function loadCustomImages() {
         
         if (savedMode) {
             gameMode = savedMode;
+            tempGameMode = savedMode;
         }
         
         if (savedPairs) {
-            customImagePairs = JSON.parse(savedPairs);
+            const parsed = JSON.parse(savedPairs);
+            if (Array.isArray(parsed)) {
+                customImagePairs = parsed;
+            }
         }
     } catch (e) {
         console.error('Failed to load custom images:', e);
@@ -255,8 +261,15 @@ function saveCustomImages() {
     try {
         localStorage.setItem('lianliankan_game_mode', gameMode);
         localStorage.setItem('lianliankan_custom_pairs', JSON.stringify(customImagePairs));
+        return true;
     } catch (e) {
         console.error('Failed to save custom images:', e);
+        if (e.name === 'QuotaExceededError') {
+            alert('Failed to save: Storage quota exceeded. Try using smaller images or fewer pairs.');
+        } else {
+            alert('Failed to save custom images. Please try again.');
+        }
+        return false;
     }
 }
 
@@ -264,8 +277,11 @@ function showCustomizeModal() {
     const modal = document.getElementById('customize-modal');
     modal.classList.remove('hidden');
     
+    // Set temporary mode to current saved mode
+    tempGameMode = gameMode;
+    
     // Set current mode
-    if (gameMode === 'emoji') {
+    if (tempGameMode === 'emoji') {
         document.getElementById('mode-emoji').checked = true;
         document.getElementById('custom-image-section').classList.add('hidden');
         document.getElementById('emoji-mode-info').classList.remove('hidden');
@@ -281,6 +297,9 @@ function showCustomizeModal() {
 function hideCustomizeModal() {
     const modal = document.getElementById('customize-modal');
     modal.classList.add('hidden');
+    
+    // Reset temp mode to saved mode
+    tempGameMode = gameMode;
 }
 
 function renderImagePairs() {
@@ -339,11 +358,32 @@ function handleImageUpload(event, index) {
     const file = event.target.files[0];
     if (!file) return;
     
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+        alert('Please select a valid image file.');
+        event.target.value = ''; // Clear the input
+        return;
+    }
+    
+    // Validate file size (500KB max)
+    if (file.size > MAX_IMAGE_SIZE) {
+        alert(`Image is too large (${Math.round(file.size / 1024)}KB). Please use an image smaller than ${MAX_IMAGE_SIZE / 1024}KB.`);
+        event.target.value = ''; // Clear the input
+        return;
+    }
+    
     const reader = new FileReader();
+    
     reader.onload = function(e) {
         customImagePairs[index] = e.target.result;
         renderImagePairs();
     };
+    
+    reader.onerror = function() {
+        alert('Failed to read image file. Please try another image.');
+        event.target.value = ''; // Clear the input
+    };
+    
     reader.readAsDataURL(file);
 }
 
@@ -351,13 +391,29 @@ function saveCustomization() {
     // Validate that all pairs have images
     const validPairs = customImagePairs.filter(pair => pair !== null);
     
-    if (gameMode === 'custom' && validPairs.length === 0) {
+    if (tempGameMode === 'custom' && validPairs.length === 0) {
         alert('Please upload at least one image pair for custom mode!');
         return;
     }
     
+    // Show warning if too few pairs
+    if (tempGameMode === 'custom' && validPairs.length < 8) {
+        const proceed = confirm(
+            `You have only ${validPairs.length} image pair(s). The game board has 40 pairs total, ` +
+            `so some images will appear many times. Do you want to continue?`
+        );
+        if (!proceed) return;
+    }
+    
     customImagePairs = validPairs;
-    saveCustomImages();
+    gameMode = tempGameMode;
+    
+    if (!saveCustomImages()) {
+        // If save failed, revert gameMode
+        gameMode = localStorage.getItem('lianliankan_game_mode') || 'emoji';
+        return;
+    }
+    
     hideCustomizeModal();
     
     // Restart game with new configuration
@@ -524,7 +580,7 @@ function renderBoard() {
                     tile.classList.add('custom-image');
                     const img = document.createElement('img');
                     img.src = tileContent;
-                    img.alt = 'Tile';
+                    img.alt = `Game tile at row ${row + 1}, column ${col + 1}`;
                     tile.appendChild(img);
                 } else {
                     // Emoji
@@ -1045,13 +1101,13 @@ cancelCustomizeBtn.addEventListener('click', hideCustomizeModal);
 closeCustomizeBtn.addEventListener('click', hideCustomizeModal);
 
 modeEmojiRadio.addEventListener('change', () => {
-    gameMode = 'emoji';
+    tempGameMode = 'emoji';
     document.getElementById('custom-image-section').classList.add('hidden');
     document.getElementById('emoji-mode-info').classList.remove('hidden');
 });
 
 modeCustomRadio.addEventListener('change', () => {
-    gameMode = 'custom';
+    tempGameMode = 'custom';
     document.getElementById('custom-image-section').classList.remove('hidden');
     document.getElementById('emoji-mode-info').classList.add('hidden');
 });
