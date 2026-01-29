@@ -224,10 +224,147 @@ function startGame() {
     hideAuthModal();
     showGameContainer();
     document.getElementById('current-user').textContent = currentUser;
+    loadCustomImages();
     initGame();
 }
 
 // ===== End User Authentication System =====
+
+// ===== Custom Image Management =====
+let customImagePairs = [];
+let gameMode = 'emoji'; // 'emoji' or 'custom'
+
+function loadCustomImages() {
+    try {
+        const savedMode = localStorage.getItem('lianliankan_game_mode');
+        const savedPairs = localStorage.getItem('lianliankan_custom_pairs');
+        
+        if (savedMode) {
+            gameMode = savedMode;
+        }
+        
+        if (savedPairs) {
+            customImagePairs = JSON.parse(savedPairs);
+        }
+    } catch (e) {
+        console.error('Failed to load custom images:', e);
+    }
+}
+
+function saveCustomImages() {
+    try {
+        localStorage.setItem('lianliankan_game_mode', gameMode);
+        localStorage.setItem('lianliankan_custom_pairs', JSON.stringify(customImagePairs));
+    } catch (e) {
+        console.error('Failed to save custom images:', e);
+    }
+}
+
+function showCustomizeModal() {
+    const modal = document.getElementById('customize-modal');
+    modal.classList.remove('hidden');
+    
+    // Set current mode
+    if (gameMode === 'emoji') {
+        document.getElementById('mode-emoji').checked = true;
+        document.getElementById('custom-image-section').classList.add('hidden');
+        document.getElementById('emoji-mode-info').classList.remove('hidden');
+    } else {
+        document.getElementById('mode-custom').checked = true;
+        document.getElementById('custom-image-section').classList.remove('hidden');
+        document.getElementById('emoji-mode-info').classList.add('hidden');
+    }
+    
+    renderImagePairs();
+}
+
+function hideCustomizeModal() {
+    const modal = document.getElementById('customize-modal');
+    modal.classList.add('hidden');
+}
+
+function renderImagePairs() {
+    const container = document.getElementById('image-pairs-container');
+    container.innerHTML = '';
+    
+    if (customImagePairs.length === 0) {
+        // Add initial pair
+        addImagePair();
+        return;
+    }
+    
+    customImagePairs.forEach((pair, index) => {
+        createImagePairElement(index, pair);
+    });
+}
+
+function createImagePairElement(index, pair) {
+    const container = document.getElementById('image-pairs-container');
+    const pairDiv = document.createElement('div');
+    pairDiv.className = 'image-pair-item';
+    pairDiv.dataset.index = index;
+    
+    pairDiv.innerHTML = `
+        <span class="pair-number">Pair ${index + 1}:</span>
+        <div class="image-upload-group">
+            <div class="image-preview ${pair ? '' : 'empty'}" data-pair="${index}">
+                ${pair ? `<img src="${pair}" alt="Pair ${index + 1}">` : 'No image'}
+            </div>
+            <input type="file" id="upload-${index}" accept="image/*" style="display: none;">
+            <button class="upload-btn" onclick="document.getElementById('upload-${index}').click()">
+                ${pair ? 'Change' : 'Upload'} Image
+            </button>
+        </div>
+        <button class="remove-pair-btn" onclick="removeImagePair(${index})">Remove</button>
+    `;
+    
+    container.appendChild(pairDiv);
+    
+    // Set up file input handler
+    const fileInput = document.getElementById(`upload-${index}`);
+    fileInput.addEventListener('change', (e) => handleImageUpload(e, index));
+}
+
+function addImagePair() {
+    customImagePairs.push(null);
+    renderImagePairs();
+}
+
+function removeImagePair(index) {
+    customImagePairs.splice(index, 1);
+    renderImagePairs();
+}
+
+function handleImageUpload(event, index) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        customImagePairs[index] = e.target.result;
+        renderImagePairs();
+    };
+    reader.readAsDataURL(file);
+}
+
+function saveCustomization() {
+    // Validate that all pairs have images
+    const validPairs = customImagePairs.filter(pair => pair !== null);
+    
+    if (gameMode === 'custom' && validPairs.length === 0) {
+        alert('Please upload at least one image pair for custom mode!');
+        return;
+    }
+    
+    customImagePairs = validPairs;
+    saveCustomImages();
+    hideCustomizeModal();
+    
+    // Restart game with new configuration
+    initGame();
+}
+
+// ===== End Custom Image Management =====
 
 // Game configuration
 const CONFIG = {
@@ -305,9 +442,17 @@ function generateBoard() {
     // Calculate how many pairs we need
     const pairsNeeded = totalTiles / 2;
     
+    // Determine which tile types to use based on game mode
+    let tileTypes;
+    if (gameMode === 'custom' && customImagePairs.length > 0) {
+        tileTypes = customImagePairs;
+    } else {
+        tileTypes = CONFIG.TILE_TYPES;
+    }
+    
     // Create pairs of tiles
     for (let i = 0; i < pairsNeeded; i++) {
-        const tileType = CONFIG.TILE_TYPES[i % CONFIG.TILE_TYPES.length];
+        const tileType = tileTypes[i % tileTypes.length];
         tiles.push(tileType, tileType);
     }
     
@@ -371,7 +516,21 @@ function renderBoard() {
             tile.dataset.col = col;
             
             if (gameState.board[row][col] !== null) {
-                tile.textContent = gameState.board[row][col];
+                const tileContent = gameState.board[row][col];
+                
+                // Check if it's a custom image (data URL) or emoji
+                if (typeof tileContent === 'string' && tileContent.startsWith('data:image')) {
+                    // Custom image
+                    tile.classList.add('custom-image');
+                    const img = document.createElement('img');
+                    img.src = tileContent;
+                    img.alt = 'Tile';
+                    tile.appendChild(img);
+                } else {
+                    // Emoji
+                    tile.textContent = tileContent;
+                }
+                
                 tile.addEventListener('click', () => handleTileClick(row, col));
             } else {
                 tile.classList.add('empty');
@@ -869,6 +1028,33 @@ function hideMessage() {
 // Event listeners
 newGameBtn.addEventListener('click', initGame);
 hintBtn.addEventListener('click', showHint);
+
+// Customization event listeners
+const customizeBtn = document.getElementById('customize-btn');
+const addPairBtn = document.getElementById('add-pair-btn');
+const saveCustomizeBtn = document.getElementById('save-customize-btn');
+const cancelCustomizeBtn = document.getElementById('cancel-customize-btn');
+const closeCustomizeBtn = document.getElementById('close-customize-btn');
+const modeEmojiRadio = document.getElementById('mode-emoji');
+const modeCustomRadio = document.getElementById('mode-custom');
+
+customizeBtn.addEventListener('click', showCustomizeModal);
+addPairBtn.addEventListener('click', addImagePair);
+saveCustomizeBtn.addEventListener('click', saveCustomization);
+cancelCustomizeBtn.addEventListener('click', hideCustomizeModal);
+closeCustomizeBtn.addEventListener('click', hideCustomizeModal);
+
+modeEmojiRadio.addEventListener('change', () => {
+    gameMode = 'emoji';
+    document.getElementById('custom-image-section').classList.add('hidden');
+    document.getElementById('emoji-mode-info').classList.remove('hidden');
+});
+
+modeCustomRadio.addEventListener('change', () => {
+    gameMode = 'custom';
+    document.getElementById('custom-image-section').classList.remove('hidden');
+    document.getElementById('emoji-mode-info').classList.add('hidden');
+});
 
 // Handle window resize
 window.addEventListener('resize', resizeCanvas);

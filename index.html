@@ -61,6 +61,7 @@
                 </div>
                 <button id="new-game-btn" class="btn-primary">New Game</button>
                 <button id="hint-btn" class="btn-secondary">Hint</button>
+                <button id="customize-btn" class="btn-secondary">Customize Images</button>
             </div>
         </div>
 
@@ -72,6 +73,42 @@
 
         <!-- Game status messages -->
         <div id="game-message" class="game-message hidden"></div>
+    </div>
+
+    <!-- Customization Modal -->
+    <div id="customize-modal" class="modal hidden">
+        <div class="modal-content customize-modal-content">
+            <h2>Customize Image Pairs</h2>
+            <div class="customize-mode-switch">
+                <label>
+                    <input type="radio" name="game-mode" value="emoji" id="mode-emoji" checked>
+                    <span>Use Emoji (Default)</span>
+                </label>
+                <label>
+                    <input type="radio" name="game-mode" value="custom" id="mode-custom">
+                    <span>Use Custom Images</span>
+                </label>
+            </div>
+            
+            <div id="custom-image-section" class="custom-image-section hidden">
+                <p class="instruction">Upload images and define which ones should be paired together. Each pair needs 2 identical images.</p>
+                
+                <div class="image-pairs-container" id="image-pairs-container">
+                    <!-- Image pairs will be added dynamically -->
+                </div>
+                
+                <button id="add-pair-btn" class="btn-primary">+ Add Image Pair</button>
+                <div class="customize-actions">
+                    <button id="save-customize-btn" class="btn-primary">Save & Apply</button>
+                    <button id="cancel-customize-btn" class="btn-secondary">Cancel</button>
+                </div>
+            </div>
+            
+            <div id="emoji-mode-info" class="emoji-mode-info">
+                <p>Using default emoji tiles. Switch to "Use Custom Images" to upload your own images.</p>
+                <button id="close-customize-btn" class="btn-primary">Close</button>
+            </div>
+        </div>
     </div>
 
     <!-- Game script -->
