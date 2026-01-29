@@ -93,6 +93,17 @@
             <div id="custom-image-section" class="custom-image-section hidden">
                 <p class="instruction">Upload one image for each pair type. The game will create two matching tiles for each image you upload.</p>
                 
+                <div class="batch-upload-section">
+                    <p class="batch-instruction">💡 <strong>Quick Batch Upload:</strong> Select multiple images at once from your local folder</p>
+                    <input type="file" id="batch-upload-input" accept="image/*" multiple style="display: none;">
+                    <button id="batch-upload-btn" class="btn-primary">📁 Load from Folder (Batch Upload)</button>
+                    <span id="batch-upload-status" class="batch-status"></span>
+                </div>
+                
+                <div class="divider-line">
+                    <span>OR</span>
+                </div>
+                
                 <div class="image-pairs-container" id="image-pairs-container">
                     <!-- Image pairs will be added dynamically -->
                 </div>

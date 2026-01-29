@@ -387,6 +387,103 @@ function handleImageUpload(event, index) {
     reader.readAsDataURL(file);
 }
 
+function handleBatchUpload(event) {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+    
+    const statusElement = document.getElementById('batch-upload-status');
+    statusElement.textContent = `Processing ${files.length} file(s)...`;
+    statusElement.className = 'batch-status processing';
+    
+    // Clear existing pairs to replace with batch upload
+    customImagePairs = [];
+    
+    let processedCount = 0;
+    let successCount = 0;
+    let errorCount = 0;
+    const errors = [];
+    
+    // Process each file
+    Array.from(files).forEach((file, index) => {
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            processedCount++;
+            errorCount++;
+            errors.push(`"${file.name}" is not an image file`);
+            checkCompletion();
+            return;
+        }
+        
+        // Validate file size (500KB max)
+        if (file.size > MAX_IMAGE_SIZE) {
+            processedCount++;
+            errorCount++;
+            errors.push(`"${file.name}" is too large (${Math.round(file.size / 1024)}KB > ${MAX_IMAGE_SIZE / 1024}KB)`);
+            checkCompletion();
+            return;
+        }
+        
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+            customImagePairs.push(e.target.result);
+            processedCount++;
+            successCount++;
+            checkCompletion();
+        };
+        
+        reader.onerror = function() {
+            processedCount++;
+            errorCount++;
+            errors.push(`Failed to read "${file.name}"`);
+            checkCompletion();
+        };
+        
+        reader.readAsDataURL(file);
+    });
+    
+    function checkCompletion() {
+        if (processedCount === files.length) {
+            // All files processed
+            let statusMessage = `✓ Successfully loaded ${successCount} image(s)`;
+            let statusClass = 'batch-status success';
+            
+            if (errorCount > 0) {
+                statusMessage += ` (${errorCount} failed)`;
+                statusClass = 'batch-status warning';
+                
+                // Show first few errors
+                if (errors.length > 0) {
+                    const errorSummary = errors.slice(0, 3).join('\n');
+                    const moreErrors = errors.length > 3 ? `\n... and ${errors.length - 3} more error(s)` : '';
+                    alert(`Batch Upload Errors:\n\n${errorSummary}${moreErrors}`);
+                }
+            }
+            
+            statusElement.textContent = statusMessage;
+            statusElement.className = statusClass;
+            
+            // Re-render the pairs
+            renderImagePairs();
+            
+            // Auto-switch to custom mode if successful
+            if (successCount > 0) {
+                tempGameMode = 'custom';
+                document.getElementById('mode-custom').checked = true;
+            }
+            
+            // Clear status after a few seconds
+            setTimeout(() => {
+                statusElement.textContent = '';
+                statusElement.className = 'batch-status';
+            }, 5000);
+        }
+    }
+    
+    // Clear the file input so the same files can be selected again
+    event.target.value = '';
+}
+
 function saveCustomization() {
     // Validate that all pairs have images
     const validPairs = customImagePairs.filter(pair => pair !== null);
@@ -1093,12 +1190,20 @@ const cancelCustomizeBtn = document.getElementById('cancel-customize-btn');
 const closeCustomizeBtn = document.getElementById('close-customize-btn');
 const modeEmojiRadio = document.getElementById('mode-emoji');
 const modeCustomRadio = document.getElementById('mode-custom');
+const batchUploadBtn = document.getElementById('batch-upload-btn');
+const batchUploadInput = document.getElementById('batch-upload-input');
 
 customizeBtn.addEventListener('click', showCustomizeModal);
 addPairBtn.addEventListener('click', addImagePair);
 saveCustomizeBtn.addEventListener('click', saveCustomization);
 cancelCustomizeBtn.addEventListener('click', hideCustomizeModal);
 closeCustomizeBtn.addEventListener('click', hideCustomizeModal);
+
+// Batch upload functionality
+batchUploadBtn.addEventListener('click', () => {
+    batchUploadInput.click();
+});
+batchUploadInput.addEventListener('change', handleBatchUpload);
 
 modeEmojiRadio.addEventListener('change', () => {
     tempGameMode = 'emoji';
