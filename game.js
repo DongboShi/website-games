@@ -391,6 +391,18 @@ function handleBatchUpload(event) {
     const files = event.target.files;
     if (!files || files.length === 0) return;
     
+    // Warn user if replacing existing images
+    if (customImagePairs.length > 0) {
+        const confirmed = confirm(
+            `You currently have ${customImagePairs.length} image(s) loaded. ` +
+            `Batch upload will replace all existing images. Do you want to continue?`
+        );
+        if (!confirmed) {
+            event.target.value = ''; // Clear the file input
+            return;
+        }
+    }
+    
     const statusElement = document.getElementById('batch-upload-status');
     statusElement.textContent = `Processing ${files.length} file(s)...`;
     statusElement.className = 'batch-status processing';
@@ -470,6 +482,8 @@ function handleBatchUpload(event) {
             if (successCount > 0) {
                 tempGameMode = 'custom';
                 document.getElementById('mode-custom').checked = true;
+                document.getElementById('custom-image-section').classList.remove('hidden');
+                document.getElementById('emoji-mode-info').classList.add('hidden');
             }
             
             // Clear status after a few seconds

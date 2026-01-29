@@ -12,7 +12,7 @@ custom-images/
 
 ### Method 1: Batch Upload from Local Folder (Recommended)
 
-1. **Add Your Images**: Place your custom image files in the `user-uploads/` folder
+1. **Organize Your Images**: Place your custom image files in the `user-uploads/` folder for easy access
    - Supported formats: JPG, PNG, GIF, WebP
    - Recommended size: 100x100 pixels or smaller
    - Maximum file size: 500KB per image
@@ -20,11 +20,16 @@ custom-images/
 
 2. **Open the Game**: Load `index.html` in your web browser
 
-3. **Enable Batch Upload**:
+3. **Upload via File Picker**:
    - Click the "Customize Images" button in the game interface
-   - Click the "Load from Folder" button
-   - Select all images you want to use from the `user-uploads/` folder
+   - Select "Use Custom Images" mode
+   - Click the "Load from Folder (Batch Upload)" button
+   - In the file picker dialog, navigate to the `user-uploads/` folder
+   - Select all images you want to use (Ctrl+A or Cmd+A to select all)
+   - Click "Open" to upload
    - The game will automatically create matching pairs from your images
+
+**Note:** The `user-uploads/` folder is for organizing your images in one place. The batch upload button opens a standard browser file picker - you'll need to navigate to this folder and select the images you want to use.
 
 ### Method 2: Individual Upload via Browser
 
@@ -58,8 +63,8 @@ custom-images/
 ## 🔧 Technical Details
 
 Images are stored in:
-1. **Local Folder**: Files in `user-uploads/` directory (persistent, git-tracked if added)
-2. **Browser Storage**: Uploaded images are saved in localStorage (browser-specific, ~5MB limit)
+1. **Local Folder** (`user-uploads/`): A convenient location to organize your images before uploading. The game uses a standard browser file picker to select images from this folder (or any other location on your computer).
+2. **Browser Storage**: Once uploaded, images are saved in your browser's localStorage (browser-specific, ~5MB limit total).
 
 ## 📦 Example Setup
 

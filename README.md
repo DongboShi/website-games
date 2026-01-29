@@ -104,10 +104,10 @@ The game automatically adjusts to different screen sizes:
 
 1. Open `index.html` in a modern web browser
 2. Register an account or log in
-3. (Optional) Customize with your own images:
-   - Place images in `custom-images/user-uploads/` folder
+1. (Optional) Customize with your own images:
+   - Place images in `custom-images/user-uploads/` folder for easy organization
    - Click "Customize Images" button
-   - Use "Load from Folder" for batch upload
+   - Use "📁 Load from Folder" to select multiple images at once via file picker
 4. Click "New Game" to start
 5. Click on matching tiles to connect and clear them
 6. Use "Hint" if you get stuck
