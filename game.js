@@ -238,6 +238,21 @@ const MAX_IMAGE_SIZE = 500 * 1024; // 500KB max per image
 
 function loadCustomImages() {
     try {
+        // Migrate old keys to new keys for existing users
+        const oldMode = localStorage.getItem('lianliankan_game_mode');
+        const oldPairs = localStorage.getItem('lianliankan_custom_pairs');
+        
+        if (oldMode) {
+            localStorage.setItem('llk_gm', oldMode);
+            localStorage.removeItem('lianliankan_game_mode');
+        }
+        
+        if (oldPairs) {
+            localStorage.setItem('llk_ip', oldPairs);
+            localStorage.removeItem('lianliankan_custom_pairs');
+        }
+        
+        // Load from new keys
         const savedMode = localStorage.getItem('llk_gm');
         const savedPairs = localStorage.getItem('llk_ip');
         
