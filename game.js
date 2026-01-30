@@ -238,8 +238,8 @@ const MAX_IMAGE_SIZE = 500 * 1024; // 500KB max per image
 
 function loadCustomImages() {
     try {
-        const savedMode = localStorage.getItem('lianliankan_game_mode');
-        const savedPairs = localStorage.getItem('lianliankan_custom_pairs');
+        const savedMode = localStorage.getItem('llk_gm');
+        const savedPairs = localStorage.getItem('llk_ip');
         
         if (savedMode) {
             gameMode = savedMode;
@@ -259,8 +259,8 @@ function loadCustomImages() {
 
 function saveCustomImages() {
     try {
-        localStorage.setItem('lianliankan_game_mode', gameMode);
-        localStorage.setItem('lianliankan_custom_pairs', JSON.stringify(customImagePairs));
+        localStorage.setItem('llk_gm', gameMode);
+        localStorage.setItem('llk_ip', JSON.stringify(customImagePairs));
         return true;
     } catch (e) {
         console.error('Failed to save custom images:', e);
@@ -521,7 +521,7 @@ function saveCustomization() {
     
     if (!saveCustomImages()) {
         // If save failed, revert gameMode
-        gameMode = localStorage.getItem('lianliankan_game_mode') || 'emoji';
+        gameMode = localStorage.getItem('llk_gm') || 'emoji';
         return;
     }
     
