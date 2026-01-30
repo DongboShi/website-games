@@ -238,18 +238,25 @@ const MAX_IMAGE_SIZE = 500 * 1024; // 500KB max per image
 
 function loadCustomImages() {
     try {
-        // Migrate old keys to new keys for existing users
-        const oldMode = localStorage.getItem('lianliankan_game_mode');
-        const oldPairs = localStorage.getItem('lianliankan_custom_pairs');
+        // Migrate old keys to new keys for existing users (only if new keys don't exist)
+        // llk_gm = game mode, llk_ip = image pairs
+        const newModeExists = localStorage.getItem('llk_gm') !== null;
+        const newPairsExists = localStorage.getItem('llk_ip') !== null;
         
-        if (oldMode) {
-            localStorage.setItem('llk_gm', oldMode);
-            localStorage.removeItem('lianliankan_game_mode');
+        if (!newModeExists) {
+            const oldMode = localStorage.getItem('lianliankan_game_mode');
+            if (oldMode) {
+                localStorage.setItem('llk_gm', oldMode);
+                localStorage.removeItem('lianliankan_game_mode');
+            }
         }
         
-        if (oldPairs) {
-            localStorage.setItem('llk_ip', oldPairs);
-            localStorage.removeItem('lianliankan_custom_pairs');
+        if (!newPairsExists) {
+            const oldPairs = localStorage.getItem('lianliankan_custom_pairs');
+            if (oldPairs) {
+                localStorage.setItem('llk_ip', oldPairs);
+                localStorage.removeItem('lianliankan_custom_pairs');
+            }
         }
         
         // Load from new keys
