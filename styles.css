@@ -654,3 +654,8 @@ button:active {
     font-weight: bold;
     font-size: 0.9em;
 }
+
+/* Hide customize button */
+#customize-btn {
+    display: none;
+}
