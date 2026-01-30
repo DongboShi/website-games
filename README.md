@@ -40,10 +40,13 @@ Connect the Dots, also known as "连连看" (Lianliankan) in Chinese, is a popul
 ### Files Structure
 ```
 .
-├── index.html      # Main HTML structure
-├── styles.css      # Styling and animations
-├── game.js         # Game logic and path-finding algorithm
-└── README.md       # This file
+├── custom-images/           # Custom image storage folder (NEW!)
+│   ├── user-uploads/       # Place your images here for batch upload
+│   └── README.md           # Custom images documentation
+├── index.html              # Main HTML structure
+├── styles.css              # Styling and animations
+├── game.js                 # Game logic and path-finding algorithm
+└── README.md               # This file
 ```
 
 ### Technologies Used
@@ -66,10 +69,29 @@ The algorithm ensures:
 
 ## 🎨 Game Elements
 
+The game supports two modes:
+
+### Default Emoji Mode
 The game uses emoji icons for tiles:
 - 🎨 🎭 🎪 🎯 🎲 (Entertainment)
 - 🎸 🎹 🎺 🎻 🎼 (Music)
 - 🏀 ⚽ 🏈 ⚾ 🎾 (Sports)
+
+### Custom Image Mode
+Upload your own images to personalize the game! Two methods available:
+
+1. **Batch Upload from Folder** (NEW! ✨)
+   - Place images in `custom-images/user-uploads/` folder
+   - Click "Customize Images" → "Load from Folder"
+   - Select multiple images at once
+   - Instant upload and preview
+
+2. **Individual Upload**
+   - Click "Customize Images" → "Use Custom Images"
+   - Add image pairs one by one
+   - Full control over each pair
+
+See the [Custom Images README](custom-images/README.md) for detailed instructions.
 
 ## 📱 Responsive Design
 
@@ -81,10 +103,15 @@ The game automatically adjusts to different screen sizes:
 ## 🚀 Getting Started
 
 1. Open `index.html` in a modern web browser
-2. Click "New Game" to start
-3. Click on matching tiles to connect and clear them
-4. Use "Hint" if you get stuck
-5. Try to clear all tiles as quickly as possible!
+2. Register an account or log in
+1. (Optional) Customize with your own images:
+   - Place images in `custom-images/user-uploads/` folder for easy organization
+   - Click "Customize Images" button
+   - Use "📁 Load from Folder" to select multiple images at once via file picker
+4. Click "New Game" to start
+5. Click on matching tiles to connect and clear them
+6. Use "Hint" if you get stuck
+7. Try to clear all tiles as quickly as possible!
 
 ## 🏆 Tips for Players
 
