@@ -572,7 +572,7 @@ button:active {
 }
 
 .tile.custom-image:hover img {
-    transform: scale(1.3);
+    transform: scale(1.15);
 }
 
 /* Batch upload section styles */
