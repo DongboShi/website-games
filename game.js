@@ -238,8 +238,30 @@ const MAX_IMAGE_SIZE = 500 * 1024; // 500KB max per image
 
 function loadCustomImages() {
     try {
-        const savedMode = localStorage.getItem('lianliankan_game_mode');
-        const savedPairs = localStorage.getItem('lianliankan_custom_pairs');
+        // Migrate old keys to new keys for existing users (only if new keys don't exist)
+        // llk_gm = game mode, llk_ip = image pairs
+        const newModeExists = localStorage.getItem('llk_gm') !== null;
+        const newPairsExists = localStorage.getItem('llk_ip') !== null;
+        
+        if (!newModeExists) {
+            const oldMode = localStorage.getItem('lianliankan_game_mode');
+            if (oldMode) {
+                localStorage.setItem('llk_gm', oldMode);
+                localStorage.removeItem('lianliankan_game_mode');
+            }
+        }
+        
+        if (!newPairsExists) {
+            const oldPairs = localStorage.getItem('lianliankan_custom_pairs');
+            if (oldPairs) {
+                localStorage.setItem('llk_ip', oldPairs);
+                localStorage.removeItem('lianliankan_custom_pairs');
+            }
+        }
+        
+        // Load from new keys
+        const savedMode = localStorage.getItem('llk_gm');
+        const savedPairs = localStorage.getItem('llk_ip');
         
         if (savedMode) {
             gameMode = savedMode;
@@ -259,8 +281,8 @@ function loadCustomImages() {
 
 function saveCustomImages() {
     try {
-        localStorage.setItem('lianliankan_game_mode', gameMode);
-        localStorage.setItem('lianliankan_custom_pairs', JSON.stringify(customImagePairs));
+        localStorage.setItem('llk_gm', gameMode);
+        localStorage.setItem('llk_ip', JSON.stringify(customImagePairs));
         return true;
     } catch (e) {
         console.error('Failed to save custom images:', e);
@@ -521,7 +543,7 @@ function saveCustomization() {
     
     if (!saveCustomImages()) {
         // If save failed, revert gameMode
-        gameMode = localStorage.getItem('lianliankan_game_mode') || 'emoji';
+        gameMode = localStorage.getItem('llk_gm') || 'emoji';
         return;
     }
     
