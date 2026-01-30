@@ -571,6 +571,7 @@ button:active {
     transition: transform 0.3s ease;
 }
 
+/* Additional zoom for custom images on hover (compounds with parent tile's 1.2x scale) */
 .tile.custom-image:hover img {
     transform: scale(1.15);
 }
