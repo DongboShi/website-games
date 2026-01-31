@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Connect the Dots (连连看)</title>
+    <title>Card Flip Memory Game (翻纸牌游戏)</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <!-- User Authentication Modal -->
     <div id="auth-modal" class="modal">
         <div class="modal-content">
-            <h2 id="auth-title">Welcome to Connect the Dots</h2>
+            <h2 id="auth-title">Welcome to Card Flip Memory Game</h2>
             
             <!-- Login Form -->
             <div id="login-form" class="auth-form">
@@ -43,7 +43,7 @@
                 <span class="user-greeting">Welcome, <strong id="current-user"></strong>!</span>
                 <button id="logout-btn" class="btn-logout">Logout</button>
             </div>
-            <h1>Connect the Dots (连连看)</h1>
+            <h1>Card Flip Memory Game (翻纸牌游戏)</h1>
             <div class="controls">
                 <div class="info-panel">
                     <div class="score-display">
@@ -60,16 +60,13 @@
                     </div>
                 </div>
                 <button id="new-game-btn" class="btn-primary">New Game</button>
-                <button id="hint-btn" class="btn-secondary">Hint</button>
+                <button id="confirm-btn" class="btn-confirm" disabled>Confirm Match</button>
                 <button id="customize-btn" class="btn-secondary">Customize Images</button>
             </div>
         </div>
 
-        <!-- Game board where tiles are rendered -->
+        <!-- Game board where cards are rendered -->
         <div id="game-board" class="game-board"></div>
-
-        <!-- Connection line canvas overlay -->
-        <canvas id="line-canvas" class="line-canvas"></canvas>
 
         <!-- Game status messages -->
         <div id="game-message" class="game-message hidden"></div>
