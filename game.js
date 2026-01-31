@@ -1,7 +1,7 @@
 /**
- * Connect the Dots (连连看) Game
- * A classic matching game where players must connect pairs of matching tiles
- * Rules: Tiles can be connected if the path has at most 2 turns and no obstacles
+ * Card Flip Memory Game (翻纸牌游戏)
+ * A card-flipping memory game where players flip 4 cards at a time
+ * Rules: Click to flip cards, find matching pairs, confirm to remove them
  */
 
 // ===== User Authentication System =====
@@ -238,28 +238,7 @@ const MAX_IMAGE_SIZE = 500 * 1024; // 500KB max per image
 
 function loadCustomImages() {
     try {
-        // Migrate old keys to new keys for existing users (only if new keys don't exist)
-        // llk_gm = game mode, llk_ip = image pairs
-        const newModeExists = localStorage.getItem('llk_gm') !== null;
-        const newPairsExists = localStorage.getItem('llk_ip') !== null;
-        
-        if (!newModeExists) {
-            const oldMode = localStorage.getItem('lianliankan_game_mode');
-            if (oldMode) {
-                localStorage.setItem('llk_gm', oldMode);
-                localStorage.removeItem('lianliankan_game_mode');
-            }
-        }
-        
-        if (!newPairsExists) {
-            const oldPairs = localStorage.getItem('lianliankan_custom_pairs');
-            if (oldPairs) {
-                localStorage.setItem('llk_ip', oldPairs);
-                localStorage.removeItem('lianliankan_custom_pairs');
-            }
-        }
-        
-        // Load from new keys
+        // Load from keys
         const savedMode = localStorage.getItem('llk_gm');
         const savedPairs = localStorage.getItem('llk_ip');
         
@@ -383,14 +362,14 @@ function handleImageUpload(event, index) {
     // Validate file type
     if (!file.type.startsWith('image/')) {
         alert('Please select a valid image file.');
-        event.target.value = ''; // Clear the input
+        event.target.value = '';
         return;
     }
     
     // Validate file size (500KB max)
     if (file.size > MAX_IMAGE_SIZE) {
         alert(`Image is too large (${Math.round(file.size / 1024)}KB). Please use an image smaller than ${MAX_IMAGE_SIZE / 1024}KB.`);
-        event.target.value = ''; // Clear the input
+        event.target.value = '';
         return;
     }
     
@@ -403,7 +382,7 @@ function handleImageUpload(event, index) {
     
     reader.onerror = function() {
         alert('Failed to read image file. Please try another image.');
-        event.target.value = ''; // Clear the input
+        event.target.value = '';
     };
     
     reader.readAsDataURL(file);
@@ -420,7 +399,7 @@ function handleBatchUpload(event) {
             `Batch upload will replace all existing images. Do you want to continue?`
         );
         if (!confirmed) {
-            event.target.value = ''; // Clear the file input
+            event.target.value = '';
             return;
         }
     }
@@ -525,17 +504,14 @@ function saveCustomization() {
     const validPairs = customImagePairs.filter(pair => pair !== null);
     
     if (tempGameMode === 'custom' && validPairs.length === 0) {
-        alert('Please upload at least one image pair for custom mode!');
+        alert('Please upload at least one image for custom mode!');
         return;
     }
     
-    // Show warning if too few pairs
-    if (tempGameMode === 'custom' && validPairs.length < 8) {
-        const proceed = confirm(
-            `You have only ${validPairs.length} image pair(s). The game board has 40 pairs total, ` +
-            `so some images will appear many times. Do you want to continue?`
-        );
-        if (!proceed) return;
+    // Show warning if too few pairs for 4-card game
+    if (tempGameMode === 'custom' && validPairs.length < 2) {
+        alert('Please upload at least 2 images for the card game!');
+        return;
     }
     
     customImagePairs = validPairs;
@@ -555,42 +531,38 @@ function saveCustomization() {
 
 // ===== End Custom Image Management =====
 
-// Game configuration
+// Card Flip Game Configuration
 const CONFIG = {
-    ROWS: 8,
-    COLS: 10,
+    CARDS_COUNT: 4,  // 4 cards displayed at a time
     TILE_TYPES: ['🎨', '🎭', '🎪', '🎯', '🎲', '🎸', '🎹', '🎺', '🎻', '🎼', '🏀', '⚽', '🏈', '⚾', '🎾'],
-    MATCH_DELAY: 500,
-    HINT_DURATION: 2000,
-    TILE_SIZE: 60,  // Must match .tile width/height in styles.css
-    TILE_GAP: 8,    // Must match .game-board gap in styles.css
-    BOARD_PADDING: 20  // Must match .game-board padding in styles.css
+    MATCH_POINTS: 20,
+    WRONG_PENALTY: -5
 };
 
 // Game state
 let gameState = {
-    board: [],
-    selectedTile: null,
+    cards: [],          // Current 4 cards being shown
+    flippedCards: [],   // Indices of flipped cards
+    selectedCards: [],  // Indices of cards selected for matching
     score: 0,
-    pairsRemaining: 0,
     timer: 0,
     timerInterval: null,
-    isProcessing: false
+    pairsMatched: 0,
+    totalPairs: 0
 };
 
 // DOM elements
 const gameBoard = document.getElementById('game-board');
-const lineCanvas = document.getElementById('line-canvas');
-const ctx = lineCanvas.getContext('2d');
 const scoreDisplay = document.getElementById('score');
 const timerDisplay = document.getElementById('timer');
 const pairsDisplay = document.getElementById('pairs-remaining');
 const gameMessage = document.getElementById('game-message');
 const newGameBtn = document.getElementById('new-game-btn');
-const hintBtn = document.getElementById('hint-btn');
+const confirmBtn = document.getElementById('confirm-btn');
+const customizeBtn = document.getElementById('customize-btn');
 
 /**
- * Initialize a new game
+ * Initialize the game
  */
 function initGame() {
     // Stop existing timer
@@ -599,20 +571,22 @@ function initGame() {
     }
     
     // Reset game state
-    gameState.selectedTile = null;
+    gameState.flippedCards = [];
+    gameState.selectedCards = [];
     gameState.score = 0;
     gameState.timer = 0;
-    gameState.isProcessing = false;
+    gameState.pairsMatched = 0;
     
-    // Generate game board
-    gameState.board = generateBoard();
-    gameState.pairsRemaining = countPairs(gameState.board);
+    // Generate new 4 cards (2 pairs)
+    generateCards();
     
     // Update UI
     updateDisplay();
-    renderBoard();
-    clearCanvas();
+    renderCards();
     hideMessage();
+    
+    // Enable confirm button logic
+    updateConfirmButton();
     
     // Start timer
     gameState.timerInterval = setInterval(() => {
@@ -622,15 +596,9 @@ function initGame() {
 }
 
 /**
- * Generate a random board with matching pairs
+ * Generate 4 cards with 2 matching pairs
  */
-function generateBoard() {
-    const totalTiles = CONFIG.ROWS * CONFIG.COLS;
-    const tiles = [];
-    
-    // Calculate how many pairs we need
-    const pairsNeeded = totalTiles / 2;
-    
+function generateCards() {
     // Determine which tile types to use based on game mode
     let tileTypes;
     if (gameMode === 'custom' && customImagePairs.length > 0) {
@@ -639,25 +607,19 @@ function generateBoard() {
         tileTypes = CONFIG.TILE_TYPES;
     }
     
-    // Create pairs of tiles
-    for (let i = 0; i < pairsNeeded; i++) {
-        const tileType = tileTypes[i % tileTypes.length];
-        tiles.push(tileType, tileType);
-    }
+    // Pick 2 random types for matching pairs
+    const shuffled = [...tileTypes].sort(() => Math.random() - 0.5);
+    const type1 = shuffled[0];
+    const type2 = shuffled[1];
     
-    // Shuffle the tiles
-    shuffleArray(tiles);
+    // Create 4 cards: 2 of each type
+    gameState.cards = [type1, type1, type2, type2];
     
-    // Create 2D board
-    const board = [];
-    for (let row = 0; row < CONFIG.ROWS; row++) {
-        board[row] = [];
-        for (let col = 0; col < CONFIG.COLS; col++) {
-            board[row][col] = tiles[row * CONFIG.COLS + col];
-        }
-    }
+    // Shuffle the cards
+    shuffleArray(gameState.cards);
     
-    return board;
+    // Total pairs for this round is 2
+    gameState.totalPairs = 2;
 }
 
 /**
@@ -671,539 +633,197 @@ function shuffleArray(array) {
 }
 
 /**
- * Count remaining pairs on the board
+ * Render the cards on the game board
  */
-function countPairs(board) {
-    let count = 0;
-    for (let row = 0; row < CONFIG.ROWS; row++) {
-        for (let col = 0; col < CONFIG.COLS; col++) {
-            if (board[row][col] !== null) {
-                count++;
-            }
-        }
-    }
-    return count / 2;
-}
-
-/**
- * Render the game board
- */
-function renderBoard() {
-    // Set grid template
-    gameBoard.style.gridTemplateColumns = `repeat(${CONFIG.COLS}, ${CONFIG.TILE_SIZE}px)`;
-    gameBoard.style.gridTemplateRows = `repeat(${CONFIG.ROWS}, ${CONFIG.TILE_SIZE}px)`;
+function renderCards() {
+    // Set grid for 4 cards in a row
+    gameBoard.style.gridTemplateColumns = `repeat(4, 120px)`;
+    gameBoard.style.gridTemplateRows = `160px`;
     
-    // Clear existing tiles
+    // Clear existing cards
     gameBoard.innerHTML = '';
     
-    // Create tile elements
-    for (let row = 0; row < CONFIG.ROWS; row++) {
-        for (let col = 0; col < CONFIG.COLS; col++) {
-            const tile = document.createElement('div');
-            tile.className = 'tile';
-            tile.dataset.row = row;
-            tile.dataset.col = col;
-            
-            if (gameState.board[row][col] !== null) {
-                const tileContent = gameState.board[row][col];
-                
-                // Check if it's a custom image (data URL) or emoji
-                if (typeof tileContent === 'string' && tileContent.startsWith('data:image')) {
-                    // Custom image
-                    tile.classList.add('custom-image');
-                    const img = document.createElement('img');
-                    img.src = tileContent;
-                    img.alt = `Game tile at row ${row + 1}, column ${col + 1}`;
-                    tile.appendChild(img);
-                } else {
-                    // Emoji
-                    tile.textContent = tileContent;
-                }
-                
-                tile.addEventListener('click', () => handleTileClick(row, col));
-            } else {
-                tile.classList.add('empty');
-            }
-            
-            gameBoard.appendChild(tile);
-        }
-    }
-    
-    // Resize canvas to match board
-    resizeCanvas();
-}
-
-/**
- * Resize canvas to overlay the game board
- */
-function resizeCanvas() {
-    const rect = gameBoard.getBoundingClientRect();
-    lineCanvas.width = rect.width;
-    lineCanvas.height = rect.height;
-    lineCanvas.style.width = rect.width + 'px';
-    lineCanvas.style.height = rect.height + 'px';
-    lineCanvas.style.top = rect.top + 'px';
-    lineCanvas.style.left = rect.left + 'px';
-}
-
-/**
- * Handle tile click event
- */
-function handleTileClick(row, col) {
-    // Ignore clicks if processing or tile is empty
-    if (gameState.isProcessing || gameState.board[row][col] === null) {
-        return;
-    }
-    
-    const clickedTile = { row, col, value: gameState.board[row][col] };
-    
-    // First tile selection
-    if (!gameState.selectedTile) {
-        gameState.selectedTile = clickedTile;
-        highlightTile(row, col, true);
-        return;
-    }
-    
-    // Clicked same tile - deselect
-    if (gameState.selectedTile.row === row && gameState.selectedTile.col === col) {
-        highlightTile(row, col, false);
-        gameState.selectedTile = null;
-        return;
-    }
-    
-    // Second tile selection - check for match
-    if (gameState.selectedTile.value === clickedTile.value) {
-        // Check if tiles can be connected
-        const path = findPath(gameState.selectedTile, clickedTile);
+    // Create card elements
+    for (let i = 0; i < CONFIG.CARDS_COUNT; i++) {
+        const card = document.createElement('div');
+        card.className = 'tile';
+        card.dataset.index = i;
         
-        if (path) {
-            // Valid match found
-            gameState.isProcessing = true;
-            highlightTile(row, col, true);
-            drawPath(path);
-            
-            setTimeout(() => {
-                // Remove matched tiles
-                gameState.board[gameState.selectedTile.row][gameState.selectedTile.col] = null;
-                gameState.board[row][col] = null;
-                
-                // Update game state
-                gameState.score += 10;
-                gameState.pairsRemaining--;
-                gameState.selectedTile = null;
-                
-                // Update UI
-                updateDisplay();
-                renderBoard();
-                clearCanvas();
-                
-                // Check win condition
-                if (gameState.pairsRemaining === 0) {
-                    endGame(true);
-                }
-                
-                gameState.isProcessing = false;
-            }, CONFIG.MATCH_DELAY);
+        // Check if it's a custom image
+        if (typeof gameState.cards[i] === 'string' && gameState.cards[i].startsWith('data:image')) {
+            card.classList.add('custom-image');
+            card.innerHTML = `<img src="${gameState.cards[i]}" alt="Card ${i + 1}">`;
         } else {
-            // No valid path - deselect and select new tile
-            highlightTile(gameState.selectedTile.row, gameState.selectedTile.col, false);
-            gameState.selectedTile = clickedTile;
-            highlightTile(row, col, true);
+            card.textContent = gameState.cards[i];
         }
-    } else {
-        // Different tiles - deselect and select new tile
-        highlightTile(gameState.selectedTile.row, gameState.selectedTile.col, false);
-        gameState.selectedTile = clickedTile;
-        highlightTile(row, col, true);
-    }
-}
-
-/**
- * Highlight or unhighlight a tile
- */
-function highlightTile(row, col, highlight) {
-    const index = row * CONFIG.COLS + col;
-    const tile = gameBoard.children[index];
-    if (highlight) {
-        tile.classList.add('selected');
-    } else {
-        tile.classList.remove('selected');
-    }
-}
-
-/**
- * Find a valid path between two tiles (max 2 turns, no obstacles)
- * Returns array of points representing the path, or null if no path exists
- */
-function findPath(tile1, tile2) {
-    // Try direct line (0 turns)
-    let path = findDirectPath(tile1, tile2);
-    if (path) return path;
-    
-    // Try 1 turn paths
-    path = findOneCornerPath(tile1, tile2);
-    if (path) return path;
-    
-    // Try 2 turn paths
-    path = findTwoCornerPath(tile1, tile2);
-    if (path) return path;
-    
-    return null;
-}
-
-/**
- * Check if path is clear between two points (same row or column)
- */
-function isPathClear(r1, c1, r2, c2) {
-    // Same position
-    if (r1 === r2 && c1 === c2) return true;
-    
-    // Same row
-    if (r1 === r2) {
-        const minCol = Math.min(c1, c2);
-        const maxCol = Math.max(c1, c2);
-        for (let c = minCol + 1; c < maxCol; c++) {
-            if (gameState.board[r1][c] !== null) return false;
-        }
-        return true;
-    }
-    
-    // Same column
-    if (c1 === c2) {
-        const minRow = Math.min(r1, r2);
-        const maxRow = Math.max(r1, r2);
-        for (let r = minRow + 1; r < maxRow; r++) {
-            if (gameState.board[r][c1] !== null) return false;
-        }
-        return true;
-    }
-    
-    return false;
-}
-
-/**
- * Find direct path (0 turns)
- */
-function findDirectPath(tile1, tile2) {
-    if (isPathClear(tile1.row, tile1.col, tile2.row, tile2.col)) {
-        return [
-            { row: tile1.row, col: tile1.col },
-            { row: tile2.row, col: tile2.col }
-        ];
-    }
-    return null;
-}
-
-/**
- * Find path with one corner (1 turn)
- */
-function findOneCornerPath(tile1, tile2) {
-    // Try corner at (tile1.row, tile2.col)
-    const corner1 = { row: tile1.row, col: tile2.col };
-    if ((gameState.board[corner1.row][corner1.col] === null || 
-         (corner1.row === tile1.row && corner1.col === tile1.col) ||
-         (corner1.row === tile2.row && corner1.col === tile2.col)) &&
-        isPathClear(tile1.row, tile1.col, corner1.row, corner1.col) &&
-        isPathClear(corner1.row, corner1.col, tile2.row, tile2.col)) {
-        return [
-            { row: tile1.row, col: tile1.col },
-            corner1,
-            { row: tile2.row, col: tile2.col }
-        ];
-    }
-    
-    // Try corner at (tile2.row, tile1.col)
-    const corner2 = { row: tile2.row, col: tile1.col };
-    if ((gameState.board[corner2.row][corner2.col] === null ||
-         (corner2.row === tile1.row && corner2.col === tile1.col) ||
-         (corner2.row === tile2.row && corner2.col === tile2.col)) &&
-        isPathClear(tile1.row, tile1.col, corner2.row, corner2.col) &&
-        isPathClear(corner2.row, corner2.col, tile2.row, tile2.col)) {
-        return [
-            { row: tile1.row, col: tile1.col },
-            corner2,
-            { row: tile2.row, col: tile2.col }
-        ];
-    }
-    
-    return null;
-}
-
-/**
- * Find path with two corners (2 turns)
- * This function explores positions beyond the board boundaries (-1 to ROWS+1, -1 to COLS+1)
- * to allow paths that extend outside the visible board, which is a valid strategy in 连连看
- */
-function findTwoCornerPath(tile1, tile2) {
-    // Check paths through all possible intermediate positions
-    // Range includes positions outside the board to allow external routing
-    for (let row = -1; row <= CONFIG.ROWS; row++) {
-        for (let col = -1; col <= CONFIG.COLS; col++) {
-            // Skip positions on the actual board (except endpoints)
-            if (row >= 0 && row < CONFIG.ROWS && col >= 0 && col < CONFIG.COLS) {
-                if (gameState.board[row][col] !== null &&
-                    !(row === tile1.row && col === tile1.col) &&
-                    !(row === tile2.row && col === tile2.col)) {
-                    continue;
-                }
-            }
-            
-            // Try path through corners
-            const corner1 = { row: tile1.row, col: col };
-            const corner2 = { row: row, col: col };
-            const corner3 = { row: row, col: tile2.col };
-            
-            // Check horizontal-vertical-horizontal path
-            if (canConnectThroughCorners(tile1, corner1, corner2, corner3, tile2)) {
-                return [
-                    { row: tile1.row, col: tile1.col },
-                    corner1,
-                    corner2,
-                    corner3,
-                    { row: tile2.row, col: tile2.col }
-                ];
-            }
-            
-            // Try vertical-horizontal-vertical path
-            const altCorner1 = { row: row, col: tile1.col };
-            const altCorner2 = { row: row, col: col };
-            const altCorner3 = { row: tile2.row, col: col };
-            
-            if (canConnectThroughCorners(tile1, altCorner1, altCorner2, altCorner3, tile2)) {
-                return [
-                    { row: tile1.row, col: tile1.col },
-                    altCorner1,
-                    altCorner2,
-                    altCorner3,
-                    { row: tile2.row, col: tile2.col }
-                ];
-            }
-        }
-    }
-    
-    return null;
-}
-
-/**
- * Check if connection is valid through given corners
- */
-function canConnectThroughCorners(tile1, corner1, corner2, corner3, tile2) {
-    // All intermediate corners must be valid positions
-    const corners = [corner1, corner2, corner3];
-    for (const corner of corners) {
-        // Outside board is OK for virtual corners
-        if (corner.row >= 0 && corner.row < CONFIG.ROWS && 
-            corner.col >= 0 && corner.col < CONFIG.COLS) {
-            // On board - must be empty or endpoint
-            if (gameState.board[corner.row][corner.col] !== null &&
-                !(corner.row === tile1.row && corner.col === tile1.col) &&
-                !(corner.row === tile2.row && corner.col === tile2.col)) {
-                return false;
-            }
-        }
-    }
-    
-    // Check all segments are clear
-    const points = [tile1, corner1, corner2, corner3, tile2];
-    for (let i = 0; i < points.length - 1; i++) {
-        if (!isPathClearExtended(points[i].row, points[i].col, points[i + 1].row, points[i + 1].col)) {
-            return false;
-        }
-    }
-    
-    return true;
-}
-
-/**
- * Check if path is clear, allowing positions outside board
- */
-function isPathClearExtended(r1, c1, r2, c2) {
-    if (r1 === r2 && c1 === c2) return true;
-    
-    // Same row
-    if (r1 === r2) {
-        // Check if row is outside board
-        if (r1 < 0 || r1 >= CONFIG.ROWS) return true;
         
-        const minCol = Math.min(c1, c2);
-        const maxCol = Math.max(c1, c2);
-        for (let c = Math.max(0, minCol + 1); c < Math.min(CONFIG.COLS, maxCol); c++) {
-            if (gameState.board[r1][c] !== null) return false;
-        }
-        return true;
-    }
-    
-    // Same column
-    if (c1 === c2) {
-        // Check if column is outside board
-        if (c1 < 0 || c1 >= CONFIG.COLS) return true;
+        // Add click event
+        card.addEventListener('click', () => handleCardClick(i));
         
-        const minRow = Math.min(r1, r2);
-        const maxRow = Math.max(r1, r2);
-        for (let r = Math.max(0, minRow + 1); r < Math.min(CONFIG.ROWS, maxRow); r++) {
-            if (gameState.board[r][c1] !== null) return false;
+        gameBoard.appendChild(card);
+    }
+}
+
+/**
+ * Handle card click
+ */
+function handleCardClick(index) {
+    const card = gameBoard.children[index];
+    
+    // Check if card is already flipped
+    if (gameState.flippedCards.includes(index)) {
+        // Unflip the card
+        card.classList.remove('flipped');
+        card.classList.remove('selected');
+        gameState.flippedCards = gameState.flippedCards.filter(i => i !== index);
+        gameState.selectedCards = gameState.selectedCards.filter(i => i !== index);
+    } else {
+        // Flip the card
+        card.classList.add('flipped');
+        gameState.flippedCards.push(index);
+    }
+    
+    updateConfirmButton();
+}
+
+/**
+ * Update confirm button state
+ */
+function updateConfirmButton() {
+    // Enable confirm button only if at least 2 cards are flipped
+    if (gameState.flippedCards.length >= 2) {
+        confirmBtn.disabled = false;
+    } else {
+        confirmBtn.disabled = true;
+    }
+}
+
+/**
+ * Handle confirm button click
+ */
+function handleConfirm() {
+    if (gameState.flippedCards.length < 2) {
+        return;
+    }
+    
+    // Check if all flipped cards match
+    const flippedValues = gameState.flippedCards.map(i => gameState.cards[i]);
+    const firstValue = flippedValues[0];
+    const allMatch = flippedValues.every(v => {
+        if (typeof v === 'string' && v.startsWith('data:image')) {
+            return v === firstValue;
         }
-        return true;
+        return v === firstValue;
+    });
+    
+    if (allMatch) {
+        // Cards match!
+        handleMatch();
+    } else {
+        // Cards don't match
+        handleMismatch();
+    }
+}
+
+/**
+ * Handle successful match
+ */
+function handleMatch() {
+    const matchCount = gameState.flippedCards.length;
+    const pairsFound = Math.floor(matchCount / 2);
+    
+    // Award points
+    gameState.score += CONFIG.MATCH_POINTS * pairsFound;
+    gameState.pairsMatched += pairsFound;
+    
+    // Animate and remove matched cards
+    gameState.flippedCards.forEach(index => {
+        const card = gameBoard.children[index];
+        card.classList.add('matched');
+        setTimeout(() => {
+            card.classList.add('empty');
+        }, 600);
+    });
+    
+    // Clear selection
+    gameState.flippedCards = [];
+    gameState.selectedCards = [];
+    
+    // Check if all pairs are matched (game won)
+    if (gameState.pairsMatched >= gameState.totalPairs) {
+        setTimeout(() => {
+            showMessage(`🎉 Excellent! You matched all pairs!<br>Score: ${gameState.score}<br>Time: ${formatTime(gameState.timer)}`);
+            setTimeout(() => {
+                initGame(); // Start new round
+            }, 3000);
+        }, 700);
     }
     
-    return false;
+    updateDisplay();
+    updateConfirmButton();
 }
 
 /**
- * Draw the connection path on canvas
+ * Handle mismatch
  */
-function drawPath(path) {
-    clearCanvas();
+function handleMismatch() {
+    // Apply penalty
+    gameState.score += CONFIG.WRONG_PENALTY;
     
-    if (path.length < 2) return;
+    // Flash cards to show mismatch
+    gameState.flippedCards.forEach(index => {
+        const card = gameBoard.children[index];
+        card.style.background = 'linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%)';
+        setTimeout(() => {
+            card.style.background = '';
+        }, 500);
+    });
     
-    ctx.strokeStyle = '#4CAF50';
-    ctx.lineWidth = 4;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
+    // Unflip cards after a delay
+    setTimeout(() => {
+        gameState.flippedCards.forEach(index => {
+            const card = gameBoard.children[index];
+            card.classList.remove('flipped');
+            card.classList.remove('selected');
+        });
+        gameState.flippedCards = [];
+        gameState.selectedCards = [];
+        updateConfirmButton();
+    }, 1000);
     
-    ctx.beginPath();
-    
-    // Get tile centers
-    const startPoint = getTileCenter(path[0].row, path[0].col);
-    ctx.moveTo(startPoint.x, startPoint.y);
-    
-    for (let i = 1; i < path.length; i++) {
-        const point = getTileCenter(path[i].row, path[i].col);
-        ctx.lineTo(point.x, point.y);
-    }
-    
-    ctx.stroke();
+    updateDisplay();
 }
 
 /**
- * Get the center position of a tile
- */
-function getTileCenter(row, col) {
-    const tileSize = CONFIG.TILE_SIZE + CONFIG.TILE_GAP; // tile width + gap
-    const padding = CONFIG.BOARD_PADDING;
-    
-    return {
-        x: padding + col * tileSize + CONFIG.TILE_SIZE / 2,
-        y: padding + row * tileSize + CONFIG.TILE_SIZE / 2
-    };
-}
-
-/**
- * Clear the canvas
- */
-function clearCanvas() {
-    ctx.clearRect(0, 0, lineCanvas.width, lineCanvas.height);
-}
-
-/**
- * Update score and timer display
+ * Update all display elements
  */
 function updateDisplay() {
     scoreDisplay.textContent = gameState.score;
-    pairsDisplay.textContent = gameState.pairsRemaining;
     updateTimerDisplay();
+    pairsDisplay.textContent = `${gameState.pairsMatched}/${gameState.totalPairs}`;
 }
 
 /**
  * Update timer display
  */
 function updateTimerDisplay() {
-    const minutes = Math.floor(gameState.timer / 60);
-    const seconds = gameState.timer % 60;
-    timerDisplay.textContent = 
-        `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    timerDisplay.textContent = formatTime(gameState.timer);
 }
 
 /**
- * Show hint - highlight a valid matching pair
+ * Format time as MM:SS
  */
-function showHint() {
-    // Find all matching pairs
-    const pairs = findAllMatchingPairs();
-    
-    if (pairs.length === 0) {
-        showMessage('No more moves available!');
-        setTimeout(hideMessage, 2000);
-        return;
-    }
-    
-    // Pick a random pair
-    const randomPair = pairs[Math.floor(Math.random() * pairs.length)];
-    
-    // Highlight the pair
-    const index1 = randomPair.tile1.row * CONFIG.COLS + randomPair.tile1.col;
-    const index2 = randomPair.tile2.row * CONFIG.COLS + randomPair.tile2.col;
-    
-    gameBoard.children[index1].classList.add('hint');
-    gameBoard.children[index2].classList.add('hint');
-    
-    // Remove hint after duration
-    setTimeout(() => {
-        gameBoard.children[index1].classList.remove('hint');
-        gameBoard.children[index2].classList.remove('hint');
-    }, CONFIG.HINT_DURATION);
-}
-
-/**
- * Find all matching pairs that can be connected
- */
-function findAllMatchingPairs() {
-    const pairs = [];
-    
-    for (let r1 = 0; r1 < CONFIG.ROWS; r1++) {
-        for (let c1 = 0; c1 < CONFIG.COLS; c1++) {
-            if (gameState.board[r1][c1] === null) continue;
-            
-            for (let r2 = 0; r2 < CONFIG.ROWS; r2++) {
-                for (let c2 = 0; c2 < CONFIG.COLS; c2++) {
-                    if (r1 === r2 && c1 === c2) continue;
-                    if (gameState.board[r2][c2] === null) continue;
-                    if (gameState.board[r1][c1] !== gameState.board[r2][c2]) continue;
-                    
-                    const tile1 = { row: r1, col: c1, value: gameState.board[r1][c1] };
-                    const tile2 = { row: r2, col: c2, value: gameState.board[r2][c2] };
-                    
-                    if (findPath(tile1, tile2)) {
-                        // Avoid duplicates
-                        const exists = pairs.some(p => 
-                            (p.tile1.row === r1 && p.tile1.col === c1 && p.tile2.row === r2 && p.tile2.col === c2) ||
-                            (p.tile1.row === r2 && p.tile1.col === c2 && p.tile2.row === r1 && p.tile2.col === c1)
-                        );
-                        
-                        if (!exists) {
-                            pairs.push({ tile1, tile2 });
-                        }
-                    }
-                }
-            }
-        }
-    }
-    
-    return pairs;
-}
-
-/**
- * End the game
- */
-function endGame(won) {
-    if (gameState.timerInterval) {
-        clearInterval(gameState.timerInterval);
-    }
-    
-    if (won) {
-        showMessage(`🎉 You Won! 🎉<br>Score: ${gameState.score}<br>Time: ${timerDisplay.textContent}`);
-    } else {
-        showMessage('Game Over!');
-    }
+function formatTime(seconds) {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 }
 
 /**
  * Show game message
  */
-function showMessage(text) {
-    // Use innerHTML only for trusted game-generated content (emojis and formatting)
-    gameMessage.innerHTML = text;
+function showMessage(message) {
+    gameMessage.innerHTML = message;
     gameMessage.classList.remove('hidden');
 }
 
@@ -1214,47 +834,36 @@ function hideMessage() {
     gameMessage.classList.add('hidden');
 }
 
-// Event listeners
+// Event listeners for buttons
 newGameBtn.addEventListener('click', initGame);
-hintBtn.addEventListener('click', showHint);
-
-// Customization event listeners
-const customizeBtn = document.getElementById('customize-btn');
-const addPairBtn = document.getElementById('add-pair-btn');
-const saveCustomizeBtn = document.getElementById('save-customize-btn');
-const cancelCustomizeBtn = document.getElementById('cancel-customize-btn');
-const closeCustomizeBtn = document.getElementById('close-customize-btn');
-const modeEmojiRadio = document.getElementById('mode-emoji');
-const modeCustomRadio = document.getElementById('mode-custom');
-const batchUploadBtn = document.getElementById('batch-upload-btn');
-const batchUploadInput = document.getElementById('batch-upload-input');
-
+confirmBtn.addEventListener('click', handleConfirm);
 customizeBtn.addEventListener('click', showCustomizeModal);
-addPairBtn.addEventListener('click', addImagePair);
-saveCustomizeBtn.addEventListener('click', saveCustomization);
-cancelCustomizeBtn.addEventListener('click', hideCustomizeModal);
-closeCustomizeBtn.addEventListener('click', hideCustomizeModal);
 
-// Batch upload functionality
-batchUploadBtn.addEventListener('click', () => {
-    batchUploadInput.click();
-});
-batchUploadInput.addEventListener('change', handleBatchUpload);
-
-modeEmojiRadio.addEventListener('change', () => {
-    tempGameMode = 'emoji';
-    document.getElementById('custom-image-section').classList.add('hidden');
-    document.getElementById('emoji-mode-info').classList.remove('hidden');
+// Customize modal event listeners
+document.getElementById('mode-emoji').addEventListener('change', function() {
+    if (this.checked) {
+        tempGameMode = 'emoji';
+        document.getElementById('custom-image-section').classList.add('hidden');
+        document.getElementById('emoji-mode-info').classList.remove('hidden');
+    }
 });
 
-modeCustomRadio.addEventListener('change', () => {
-    tempGameMode = 'custom';
-    document.getElementById('custom-image-section').classList.remove('hidden');
-    document.getElementById('emoji-mode-info').classList.add('hidden');
+document.getElementById('mode-custom').addEventListener('change', function() {
+    if (this.checked) {
+        tempGameMode = 'custom';
+        document.getElementById('custom-image-section').classList.remove('hidden');
+        document.getElementById('emoji-mode-info').classList.add('hidden');
+    }
 });
 
-// Handle window resize
-window.addEventListener('resize', resizeCanvas);
+document.getElementById('add-pair-btn').addEventListener('click', addImagePair);
+document.getElementById('save-customize-btn').addEventListener('click', saveCustomization);
+document.getElementById('cancel-customize-btn').addEventListener('click', hideCustomizeModal);
+document.getElementById('close-customize-btn').addEventListener('click', hideCustomizeModal);
+document.getElementById('batch-upload-input').addEventListener('change', handleBatchUpload);
+document.getElementById('batch-upload-btn').addEventListener('click', function() {
+    document.getElementById('batch-upload-input').click();
+});
 
-// Initialize authentication on load
-initAuth();
+// Initialize the authentication system when page loads
+document.addEventListener('DOMContentLoaded', initAuth);
