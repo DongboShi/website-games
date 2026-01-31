@@ -504,7 +504,7 @@ function saveCustomization() {
     const validPairs = customImagePairs.filter(pair => pair !== null);
     
     if (tempGameMode === 'custom' && validPairs.length === 0) {
-        alert('Please upload at least one image for custom mode!');
+        alert('Please upload at least 2 images for the card game!');
         return;
     }
     
@@ -607,10 +607,16 @@ function generateCards() {
         tileTypes = CONFIG.TILE_TYPES;
     }
     
-    // Pick 2 random types for matching pairs
-    const shuffled = [...tileTypes].sort(() => Math.random() - 0.5);
-    const type1 = shuffled[0];
-    const type2 = shuffled[1];
+    // Pick 2 random types for matching pairs using Fisher-Yates inspired selection
+    const type1Index = Math.floor(Math.random() * tileTypes.length);
+    let type2Index = Math.floor(Math.random() * tileTypes.length);
+    // Ensure we pick a different type for the second pair
+    while (type2Index === type1Index && tileTypes.length > 1) {
+        type2Index = Math.floor(Math.random() * tileTypes.length);
+    }
+    
+    const type1 = tileTypes[type1Index];
+    const type2 = tileTypes[type2Index];
     
     // Create 4 cards: 2 of each type
     gameState.cards = [type1, type1, type2, type2];
