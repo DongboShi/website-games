@@ -2,6 +2,12 @@
 
 A fun card-flipping memory game where players flip cards to find matching pairs.
 
+## 🌐 Play Online
+
+**Live Demo:** [https://dongboshi.github.io/website-games/](https://dongboshi.github.io/website-games/)
+
+The game is automatically deployed to GitHub Pages when changes are pushed to the main branch.
+
 ## 🎮 Game Description
 
 Card Flip Memory Game is a simple yet engaging puzzle game where players flip cards to reveal their contents and match pairs. Four cards are displayed at a time, and players must find the two matching pairs by flipping cards and confirming matches.
@@ -115,6 +121,27 @@ The game automatically adjusts to different screen sizes:
 - Try to match pairs with as few mistakes as possible to maximize your score
 - Negative scores are possible if you make too many wrong matches
 - Each round has exactly 2 pairs (4 cards total)
+
+## 🚀 Deployment
+
+This game is automatically deployed to GitHub Pages using GitHub Actions.
+
+### Automatic Deployment
+- The game is automatically deployed when changes are pushed to the `main` branch
+- GitHub Actions workflow handles the deployment process
+- Live at: [https://dongboshi.github.io/website-games/](https://dongboshi.github.io/website-games/)
+
+### Manual Deployment
+You can also trigger a deployment manually:
+1. Go to the repository's "Actions" tab
+2. Select the "Deploy to GitHub Pages" workflow
+3. Click "Run workflow"
+
+### Setup GitHub Pages (First Time)
+If you're setting this up for the first time:
+1. Go to repository Settings → Pages
+2. Under "Source", select "GitHub Actions"
+3. The workflow will automatically deploy the site
 
 ## 📄 License
 
