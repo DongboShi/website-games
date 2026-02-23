@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Academic Auditor — Pair Up Memory Game</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Courier+Prime:wght@400;700&family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="academic-auditor.css">
+</head>
+<body>
+
+  <!-- ══ TOP HEADER ══════════════════════════════════════════════ -->
+  <header class="aa-header">
+    <div class="aa-header__stamp">CONFIDENTIAL</div>
+    <div class="aa-header__title-block">
+      <h1 class="aa-header__title">The Academic Auditor</h1>
+      <p class="aa-header__subtitle">
+        Pair Up — Match the <span class="label-en">English Original</span> with its
+        <span class="label-cn">Chinese Shadow</span>
+      </p>
+    </div>
+    <nav class="aa-header__nav">
+      <a href="index.html" class="aa-btn aa-btn--ghost">← Back to Games</a>
+    </nav>
+  </header>
+
+  <!-- ══ CONTROLS BAR ════════════════════════════════════════════ -->
+  <div class="aa-controls">
+    <div class="aa-stat">
+      <span class="aa-stat__label">SCORE</span>
+      <span class="aa-stat__value" id="score">0</span>
+    </div>
+    <div class="aa-stat">
+      <span class="aa-stat__label">PAIRS FOUND</span>
+      <span class="aa-stat__value" id="pairs-found">0 / 0</span>
+    </div>
+    <div class="aa-stat">
+      <span class="aa-stat__label">TIME</span>
+      <span class="aa-stat__value" id="timer">00:00</span>
+    </div>
+    <div class="aa-stat">
+      <span class="aa-stat__label">ROUND</span>
+      <span class="aa-stat__value" id="round">1</span>
+    </div>
+    <button id="new-game-btn" class="aa-btn aa-btn--primary">New Game</button>
+  </div>
+
+  <!-- ══ GAME BOARD ═══════════════════════════════════════════════ -->
+  <main class="aa-board-wrap">
+    <div id="game-board" class="aa-board" role="list" aria-label="Paper cards"></div>
+  </main>
+
+  <!-- ══ ROUND COMPLETE BANNER ════════════════════════════════════ -->
+  <div id="round-banner" class="aa-round-banner hidden" role="alert" aria-live="polite">
+    <div class="aa-round-banner__inner">
+      <div class="aa-round-banner__stamp">ROUND COMPLETE</div>
+      <p id="round-banner-msg" class="aa-round-banner__msg"></p>
+      <button id="next-round-btn" class="aa-btn aa-btn--primary">Next Round →</button>
+    </div>
+  </div>
+
+  <!-- ══ GAME COMPLETE BANNER ═════════════════════════════════════ -->
+  <div id="game-complete" class="aa-round-banner hidden" role="alert" aria-live="polite">
+    <div class="aa-round-banner__inner">
+      <div class="aa-round-banner__stamp">AUDIT COMPLETE</div>
+      <p id="game-complete-msg" class="aa-round-banner__msg"></p>
+      <button id="play-again-btn" class="aa-btn aa-btn--primary">Play Again</button>
+    </div>
+  </div>
+
+  <!-- ══ CASE STUDY MODAL ══════════════════════════════════════════ -->
+  <div id="case-study-modal" class="aa-modal hidden" role="dialog" aria-modal="true" aria-labelledby="cs-methodology">
+    <div class="aa-modal__overlay"></div>
+    <div class="aa-modal__box">
+
+      <!-- Modal header -->
+      <div class="aa-modal__header">
+        <div class="aa-modal__header-left">
+          <span class="aa-modal__file-label">CASE FILE</span>
+          <h2 id="cs-methodology" class="aa-modal__methodology"></h2>
+        </div>
+        <div class="aa-modal__header-right">
+          <button id="toggle-translation-btn" class="aa-btn aa-btn--ghost" aria-pressed="false">
+            Toggle Translation
+          </button>
+          <button id="close-modal-btn" class="aa-btn aa-btn--danger" aria-label="Close case study">✕ Close</button>
+        </div>
+      </div>
+
+      <!-- Two-column paper display -->
+      <div class="aa-modal__columns">
+
+        <!-- English paper -->
+        <article class="aa-paper aa-paper--en" aria-label="English original paper">
+          <div class="aa-paper__banner aa-paper__banner--en">ORIGINAL PAPER</div>
+          <div class="aa-paper__content">
+            <div class="aa-paper__journal-line">
+              <span id="cs-journal-en" class="aa-paper__journal"></span>
+              <span id="cs-year-en" class="aa-paper__year"></span>
+            </div>
+            <h3 id="cs-title-en" class="aa-paper__title"></h3>
+            <p id="cs-authors-en" class="aa-paper__authors"></p>
+            <hr class="aa-paper__rule">
+            <h4 class="aa-paper__abstract-label">Abstract</h4>
+            <p id="cs-abstract-en" class="aa-paper__abstract"></p>
+          </div>
+          <div class="aa-paper__corner-stamp aa-paper__corner-stamp--en">EN</div>
+        </article>
+
+        <!-- Methodology bridge -->
+        <div class="aa-modal__bridge">
+          <div class="aa-modal__bridge-inner">
+            <span class="aa-modal__bridge-icon">⚖</span>
+            <span id="cs-method-badge" class="aa-modal__bridge-label"></span>
+          </div>
+        </div>
+
+        <!-- Chinese paper -->
+        <article class="aa-paper aa-paper--cn" aria-label="Chinese shadow paper">
+          <div class="aa-paper__banner aa-paper__banner--cn">影子文献 &nbsp;/&nbsp; SHADOW</div>
+          <div class="aa-paper__content">
+            <div class="aa-paper__journal-line">
+              <span id="cs-journal-cn" class="aa-paper__journal"></span>
+              <span id="cs-year-cn" class="aa-paper__year"></span>
+            </div>
+            <h3 id="cs-title-cn" class="aa-paper__title"></h3>
+            <p id="cs-authors-cn" class="aa-paper__authors"></p>
+            <hr class="aa-paper__rule">
+            <h4 class="aa-paper__abstract-label">摘要 / Abstract</h4>
+            <p id="cs-abstract-cn" class="aa-paper__abstract"></p>
+            <!-- translation layer, initially hidden -->
+            <div id="cs-translation" class="aa-paper__translation hidden">
+              <hr class="aa-paper__rule">
+              <h4 class="aa-paper__abstract-label">English Translation</h4>
+              <p id="cs-abstract-cn-translated" class="aa-paper__abstract aa-paper__abstract--translated"></p>
+            </div>
+          </div>
+          <div class="aa-paper__corner-stamp aa-paper__corner-stamp--cn">CN</div>
+        </article>
+
+      </div><!-- /.aa-modal__columns -->
+
+      <!-- Match score notice -->
+      <div class="aa-modal__footer">
+        <span class="aa-modal__match-notice">✓ METHODOLOGY MATCH CONFIRMED — <span id="cs-score-award"></span> POINTS AWARDED</span>
+      </div>
+
+    </div><!-- /.aa-modal__box -->
+  </div><!-- /#case-study-modal -->
+
+  <script src="papers-data.js"></script>
+  <script src="academic-auditor.js"></script>
+</body>
+</html>
