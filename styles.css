@@ -444,6 +444,25 @@ button:active {
     box-shadow: 0 4px 12px rgba(238, 90, 111, 0.4);
 }
 
+.btn-academic-auditor {
+    padding: 8px 16px;
+    background: linear-gradient(135deg, #8B6914 0%, #C9A84C 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.85em;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    display: inline-block;
+}
+
+.btn-academic-auditor:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(139, 105, 20, 0.4);
+}
+
 /* Customization Modal Styles */
 .customize-modal-content {
     max-width: 700px;
