@@ -149,6 +149,26 @@
     </div><!-- /.aa-modal__box -->
   </div><!-- /#case-study-modal -->
 
+  <!-- ══ CARD ZOOM OVERLAY ════════════════════════════════════════ -->
+  <div id="card-zoom-overlay" class="aa-zoom-overlay hidden" role="dialog" aria-modal="true" aria-label="Card zoom view">
+    <div class="aa-zoom-overlay__backdrop"></div>
+    <div class="aa-zoom-card" id="zoom-card-content">
+      <button id="zoom-close-btn" class="aa-zoom-close aa-btn aa-btn--danger" aria-label="Close zoom view">✕</button>
+      <div id="zoom-type-badge" class="aa-zoom__type-badge"></div>
+      <div class="aa-zoom__body">
+        <div class="aa-zoom__journal-line">
+          <span id="zoom-journal" class="aa-paper__journal"></span>
+          <span id="zoom-year" class="aa-paper__year"></span>
+        </div>
+        <h3 id="zoom-title" class="aa-paper__title"></h3>
+        <p id="zoom-authors" class="aa-paper__authors"></p>
+        <hr class="aa-paper__rule">
+        <h4 class="aa-paper__abstract-label">Abstract</h4>
+        <p id="zoom-abstract" class="aa-paper__abstract"></p>
+      </div>
+    </div>
+  </div>
+
   <script src="papers-data.js"></script>
   <script src="academic-auditor.js"></script>
 </body>
