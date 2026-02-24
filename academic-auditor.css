@@ -135,6 +135,13 @@ body {
   background: #111;
 }
 
+.aa-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
 /* ── Controls bar ─────────────────────────────────────────────── */
 .aa-controls {
   display: flex;
