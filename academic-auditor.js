@@ -42,6 +42,7 @@ const pairsFoundEl    = document.getElementById('pairs-found');
 const timerEl         = document.getElementById('timer');
 const roundEl         = document.getElementById('round');
 const newGameBtn      = document.getElementById('new-game-btn');
+const confirmMatchBtn = document.getElementById('confirm-match-btn');
 const roundBanner     = document.getElementById('round-banner');
 const roundBannerMsg  = document.getElementById('round-banner-msg');
 const nextRoundBtn    = document.getElementById('next-round-btn');
@@ -132,6 +133,7 @@ function newGame() {
   updateScoreDisplay();
   timerEl.textContent = '00:00';
   roundEl.textContent = '1';
+  updateConfirmButton();
 
   loadRound();
   startTimer();
@@ -154,6 +156,7 @@ function loadRound() {
   state.flipped = [];
   state.locked  = false;
 
+  updateConfirmButton();
   renderBoard();
 }
 
@@ -242,16 +245,18 @@ function handleCardClick(idx) {
   if (state.locked) return;
   const card = state.cards[idx];
   if (card.matched) return;
-  if (state.flipped.includes(idx)) return;   // already face-up
-  if (state.flipped.length >= 2) return;     // two already chosen
 
-  flipCard(idx, true);
-  state.flipped.push(idx);
-
-  if (state.flipped.length === 2) {
-    state.locked = true;
-    setTimeout(checkMatch, 350); // slight delay so player can see both cards
+  if (state.flipped.includes(idx)) {
+    // Toggle off: unflip this card
+    flipCard(idx, false);
+    state.flipped = state.flipped.filter(i => i !== idx);
+  } else {
+    // Flip face-up
+    flipCard(idx, true);
+    state.flipped.push(idx);
   }
+
+  updateConfirmButton();
 }
 
 function flipCard(idx, faceUp) {
@@ -264,48 +269,78 @@ function flipCard(idx, faceUp) {
 }
 
 function checkMatch() {
-  const [i, j] = state.flipped;
-  const a = state.cards[i];
-  const b = state.cards[j];
+  // Group flipped card indices by pairId
+  const groups = {};
+  state.flipped.forEach(i => {
+    const card = state.cards[i];
+    if (!groups[card.pairId]) groups[card.pairId] = [];
+    groups[card.pairId].push(i);
+  });
 
-  if (a.pairId === b.pairId && a.type !== b.type) {
-    // ── Match!
-    a.matched = b.matched = true;
-    a.el.classList.add('is-matched');
-    b.el.classList.add('is-matched');
-    a.el.classList.remove('is-selected');
-    b.el.classList.remove('is-selected');
+  // Valid selection: every pairId has exactly one EN and one CN card
+  let allValid = true;
+  const matchedPairIds = [];
+  for (const pairId in groups) {
+    const indices = groups[pairId];
+    const types = indices.map(i => state.cards[i].type);
+    if (indices.length !== 2 || !types.includes('en') || !types.includes('cn')) {
+      allValid = false;
+      break;
+    }
+    matchedPairIds.push(Number(pairId));
+  }
 
-    state.score      += MATCH_POINTS;
-    state.pairsFound += 1;
+  if (allValid && matchedPairIds.length > 0) {
+    // ── All selected cards form valid pairs
+    state.flipped.forEach(i => {
+      state.cards[i].matched = true;
+      state.cards[i].el.classList.add('is-matched');
+      state.cards[i].el.classList.remove('is-selected');
+    });
+
+    state.score      += MATCH_POINTS * matchedPairIds.length;
+    state.pairsFound += matchedPairIds.length;
     updateScoreDisplay();
 
-    const pair = PAPERS_DATA.find(p => p.id === a.pairId);
+    // Show Case Study for the first matched pair
+    const pair = PAPERS_DATA.find(p => p.id === matchedPairIds[0]);
     setTimeout(() => openCaseStudy(pair), 600);
+
+    state.flipped = [];
+    // locked stays true until Case Study is closed
   } else {
     // ── Mismatch
     state.score = Math.max(0, state.score - MISMATCH_PENALTY);
     updateScoreDisplay();
 
-    state.cards[i].el.classList.add('is-wrong');
-    state.cards[j].el.classList.add('is-wrong');
-    state.cards[i].el.classList.remove('is-selected');
-    state.cards[j].el.classList.remove('is-selected');
+    state.flipped.forEach(i => {
+      state.cards[i].el.classList.add('is-wrong');
+      state.cards[i].el.classList.remove('is-selected');
+    });
 
     setTimeout(() => {
-      flipCard(i, false);
-      flipCard(j, false);
-      state.cards[i].el.classList.remove('is-wrong');
-      state.cards[j].el.classList.remove('is-wrong');
+      state.flipped.forEach(i => {
+        flipCard(i, false);
+        state.cards[i].el.classList.remove('is-wrong');
+      });
       state.flipped = [];
       state.locked  = false;
+      updateConfirmButton();
     }, FLIP_BACK_DELAY);
   }
+}
 
-  if (a.matched && b.matched) {
-    state.flipped = [];
-    // locked stays true until Case Study is closed
-  }
+// ─── Confirm Match button ─────────────────────────────────────────
+
+function updateConfirmButton() {
+  confirmMatchBtn.disabled = state.flipped.length < 2 || state.locked;
+}
+
+function handleConfirmMatch() {
+  if (state.flipped.length < 2 || state.locked) return;
+  state.locked = true;
+  updateConfirmButton();
+  checkMatch();
 }
 
 // ─── Score display ────────────────────────────────────────────────
@@ -358,6 +393,7 @@ function hideModal() {
   state.currentMatch = null;
   state.flipped      = [];
   state.locked       = false;
+  updateConfirmButton();
 
   // Check if this round is complete
   checkRoundComplete();
@@ -422,6 +458,7 @@ function toggleTranslation() {
 // ─── Event listeners ─────────────────────────────────────────────
 
 newGameBtn.addEventListener('click', newGame);
+confirmMatchBtn.addEventListener('click', handleConfirmMatch);
 nextRoundBtn.addEventListener('click', advanceRound);
 playAgainBtn.addEventListener('click', newGame);
 closeModalBtn.addEventListener('click', hideModal);
