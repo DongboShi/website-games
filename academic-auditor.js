@@ -233,6 +233,10 @@ function createCardElement(card, pair, idx) {
 
   // ── Events
   wrapper.addEventListener('click', () => handleCardClick(idx));
+  wrapper.addEventListener('dblclick', e => {
+    e.stopPropagation();
+    openCardZoom(card, pair);
+  });
   wrapper.addEventListener('keydown', e => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
@@ -478,6 +482,41 @@ function toggleTranslation() {
   }
 }
 
+// ─── Card Zoom ────────────────────────────────────────────────────
+
+function openCardZoom(card, pair) {
+  const isEn = card.type === 'en';
+  const zoomOverlay = document.getElementById('card-zoom-overlay');
+  const zoomCardEl  = document.getElementById('zoom-card-content');
+  const badge       = document.getElementById('zoom-type-badge');
+  const titleEl     = document.getElementById('zoom-title');
+  const abstractEl  = document.getElementById('zoom-abstract');
+
+  zoomCardEl.className = `aa-zoom-card ${isEn ? 'is-en' : 'is-cn'}`;
+  badge.className      = `aa-zoom__type-badge ${isEn ? 'is-en' : 'is-cn'}`;
+  badge.textContent    = isEn ? 'ORIGINAL PAPER' : '影子文献 / SHADOW';
+
+  document.getElementById('zoom-journal').textContent = isEn ? pair.journal_en : pair.journal_cn;
+  document.getElementById('zoom-year').textContent    = isEn ? pair.year_en    : pair.year_cn;
+  titleEl.textContent                                 = isEn ? pair.title_en   : pair.title_cn;
+  document.getElementById('zoom-authors').textContent = isEn ? pair.authors_en : pair.authors_cn;
+  abstractEl.textContent                              = isEn ? pair.abstract_en : pair.abstract_cn;
+
+  if (isEn) {
+    titleEl.style.removeProperty('font-family');
+    abstractEl.style.removeProperty('font-family');
+  } else {
+    titleEl.style.fontFamily    = 'var(--font-cjk)';
+    abstractEl.style.fontFamily = 'var(--font-cjk)';
+  }
+
+  zoomOverlay.classList.remove('hidden');
+}
+
+function closeCardZoom() {
+  document.getElementById('card-zoom-overlay').classList.add('hidden');
+}
+
 // ─── Event listeners ─────────────────────────────────────────────
 
 newGameBtn.addEventListener('click', newGame);
@@ -487,13 +526,23 @@ playAgainBtn.addEventListener('click', newGame);
 closeModalBtn.addEventListener('click', hideModal);
 toggleTransBtn.addEventListener('click', toggleTranslation);
 
+// Card zoom overlay
+document.getElementById('zoom-close-btn').addEventListener('click', closeCardZoom);
+document.getElementById('card-zoom-overlay').querySelector('.aa-zoom-overlay__backdrop')
+  .addEventListener('click', closeCardZoom);
+
 // Close modal on overlay click
 modal.querySelector('.aa-modal__overlay').addEventListener('click', hideModal);
 
-// Keyboard: Escape closes modal
+// Keyboard: Escape closes modal or zoom overlay
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
-    hideModal();
+  if (e.key === 'Escape') {
+    const zoomOverlay = document.getElementById('card-zoom-overlay');
+    if (!zoomOverlay.classList.contains('hidden')) {
+      closeCardZoom();
+    } else if (!modal.classList.contains('hidden')) {
+      hideModal();
+    }
   }
 });
 
