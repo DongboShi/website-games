@@ -32,7 +32,8 @@ const state = {
   timerSecs:      0,
   timerInterval:  null,
   translationOn:  false,
-  currentMatch:   null // pair object for open Case Study
+  currentMatch:   null, // pair object for open Case Study
+  phase:          'reveal' // 'reveal' | 'match'
 };
 
 // ─── DOM refs ─────────────────────────────────────────────────────
@@ -155,9 +156,12 @@ function loadRound() {
   state.cards   = shuffle(cards);
   state.flipped = [];
   state.locked  = false;
+  state.phase   = 'reveal';
 
   updateConfirmButton();
   renderBoard();
+  // Reveal phase: flip all cards face-up so the player can study them
+  state.cards.forEach((_, idx) => flipCard(idx, true, false));
 }
 
 // ─── Rendering ────────────────────────────────────────────────────
@@ -243,6 +247,7 @@ function createCardElement(card, pair, idx) {
 
 function handleCardClick(idx) {
   if (state.locked) return;
+  if (state.phase === 'reveal') return;  // cards are just being studied
   const card = state.cards[idx];
   if (card.matched) return;
 
@@ -251,6 +256,7 @@ function handleCardClick(idx) {
     flipCard(idx, false);
     state.flipped = state.flipped.filter(i => i !== idx);
   } else {
+    if (state.flipped.length >= 2) return; // enforce max 2 selected cards
     // Flip face-up
     flipCard(idx, true);
     state.flipped.push(idx);
@@ -259,10 +265,11 @@ function handleCardClick(idx) {
   updateConfirmButton();
 }
 
-function flipCard(idx, faceUp) {
+function flipCard(idx, faceUp, selected = true) {
   const card = state.cards[idx];
   if (faceUp) {
-    card.el.classList.add('is-flipped', 'is-selected');
+    card.el.classList.add('is-flipped');
+    if (selected) card.el.classList.add('is-selected');
   } else {
     card.el.classList.remove('is-flipped', 'is-selected');
   }
@@ -333,11 +340,27 @@ function checkMatch() {
 // ─── Confirm Match button ─────────────────────────────────────────
 
 function updateConfirmButton() {
-  confirmMatchBtn.disabled = state.flipped.length < 2 || state.locked;
+  if (state.phase === 'reveal') {
+    confirmMatchBtn.disabled = false;
+    confirmMatchBtn.textContent = 'Start Matching ▶';
+  } else {
+    confirmMatchBtn.disabled = state.flipped.length !== 2 || state.locked;
+    confirmMatchBtn.textContent = 'Confirm Match';
+  }
 }
 
 function handleConfirmMatch() {
-  if (state.flipped.length < 2 || state.locked) return;
+  if (state.phase === 'reveal') {
+    // Transition to match phase: flip all unmatched cards back face-down
+    state.cards.forEach((card, idx) => {
+      if (!card.matched) flipCard(idx, false);
+    });
+    state.phase = 'match';
+    state.flipped = [];
+    updateConfirmButton();
+    return;
+  }
+  if (state.flipped.length !== 2 || state.locked) return;
   state.locked = true;
   updateConfirmButton();
   checkMatch();
